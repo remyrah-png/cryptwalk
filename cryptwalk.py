@@ -1,6 +1,10 @@
 # cryptwalk.py - Main game file
 import os
 import random
+from random import random, choice # Added import
+from items import healing_potion, iron_sword, leather_armor # Added import
+from player import Player
+from entity import CombatEntity 
 from combat import (
     attack, apply_defend, apply_poison, apply_taunt,
     process_effects, calculate_damage
@@ -14,28 +18,18 @@ game = {
     "active_turn": "player",
     "running": True,
 
-    "player": {
-        "name": "Hero",
-        "stats": {"hp": 35, "max_hp": 35, "strength": 10, "defense": 5},
-        "alive": True,
-        "effects": [],
-        "weapon": None,
-        "armor": None,
-        "inventory": [],
-        "gold": 0,
-    },
+    "player": Player(),
 
-    "world": {
-        "depth": 0,
-        "current_room": {
-            "name": "Crypt Entrance",
-            "desc": "Cold air spills from a cracked stone doorway. The adventure begins."
+"world":{
+    "depth": 0,
+    "current_room": {
+    "name": "Crypt Entrance",
+    "desc": "Cold air spills from a cracked stone doorway. The adventure begins."
         }
-    },   # ← COMMA HERE
+    },
 
     "enemy": None,
 }
-
 
 
 
@@ -70,15 +64,16 @@ def render_screen(game, mode="explore"):
         print()
 
     # HUD
-    p_hp = player["stats"]["hp"]
-    p_max = player["stats"]["max_hp"]
-    print(f"HERO : {bar(p_hp, p_max)} {p_hp}/{p_max} HP   Gold: {player['gold']}".center(50))
+    player = game["player"]
+    p_hp = player.stats["hp"]
+    p_max = player.stats["max_hp"]
+    print(f"HERO : {bar(p_hp, p_max)} {p_hp}/{p_max} HP   Gold: {player.gold}".center(50))
 
     if mode == "combat" and game["enemy"]:
         e = game["enemy"]
-        e_hp = e["stats"]["hp"]
-        e_max = e["stats"]["max_hp"]
-        print(f"ENEMY: {bar(e_hp, e_max)} {e_hp}/{e_max} HP ({e['name']})".center(50))
+        e_hp = e.stats["hp"]
+        e_max = e.stats["max_hp"]
+        print(f"ENEMY: {bar(e_hp, e_max)} {e_hp}/{e_max} HP ({e.name})".center(50))
 
     print("-" * 50)
 
@@ -121,7 +116,7 @@ def player_turn(game):
 
 def enemy_turn(game):
     attack(game, "enemy", "player")
-    game["combat_log"].append(f"{game['enemy']['name']} attacks!")
+    game["combat_log"].append(f"{game['enemy'].name} attacks!")
 
 
 def run_combat(game):
@@ -131,26 +126,30 @@ def run_combat(game):
     depth = game["world"]["depth"]
     scale = 1 + depth * .1 # +10% stats per level deeper
 
-    game["enemy"] = {
-        "name": "Goblin",
-        "stats": {"hp": 20, "max_hp": 20, "strength": 6, "defense": 3},
-        "defending": False,
-        "effects": []
-    }
+    game["enemy"] = CombatEntity("Goblin", 20, 20, 6, 2)
     game["combat_log"].clear()
     game["turn"] = 1
 
-    while game["player"]["alive"] and game["enemy"] and game["enemy"]["stats"]["hp"] > 0:
+    while game["player"].is_alive() and game["enemy"] and game["enemy"].stats["hp"] > 0:
         render_screen(game, mode="combat")
 
         if game["active_turn"] == "player":
             player_turn(game)
             process_effects(game, "enemy")
-            if game["enemy"]["stats"]["hp"] <= 0:
+            if game["enemy"].stats["hp"] <= 0:
                 game["combat_log"].append("Goblin defeated!")
                 render_screen(game, mode="combat")
                 input("\nVictory! Press Enter...")
                 game["player"]["gold"] += 10
+             
+                print("\nSearching the body...")
+
+            if random() < 0.6:  # 60% chance of loot
+                loot = choice([healing_potion, iron_sword, leather_armor])
+                game["player"].inventory.append(loot)
+                print(f"You found a {loot.name}! Added to inventory.")
+            else:
+                print("Nothing useful found.")
                 game["enemy"] = None
                 return
 
@@ -159,8 +158,8 @@ def run_combat(game):
         if game["active_turn"] == "enemy":
             enemy_turn(game)
             process_effects(game, "player")
-            if game["player"]["stats"]["hp"] <= 0:
-                game["player"]["alive"] = False
+            if game["player"].stats["hp"] <= 0:
+                game["player"].is_alive = False
                 render_screen(game, mode="combat")
                 input("\nYou have been defeated...")
                 return
@@ -170,7 +169,7 @@ def run_combat(game):
 
 
 def roll_encounter():
-    return random.random() < 0.5
+    return random() < 0.5
 
 
 
@@ -184,9 +183,9 @@ def move_forward(game):
                   "Collapsed", "Flickering", "Silent", "Damp", "Forgotten"]
     nouns = ["Chamber", "Hall", "Vault", "Passage", "Crypt", "Tomb", "Gallery"]
 
-    adj = random.choice(adjectives)
-    noun = random.choice(nouns)
-    room_name = f"The {adj} {noun}"
+    adj = choice(adjectives)
+    nouns = choice(nouns)
+    room_name = f"The {adj} {nouns}"
 
     descriptions = [
         "The air tastes old and stale.",
@@ -198,7 +197,7 @@ def move_forward(game):
         "A cold wind blows from deeper within.",
         "The floor is slick with moisture."
     ]
-    room_desc = random.choice(descriptions)
+    room_desc = choice(descriptions)
 
     # Update current room
     game["world"]["current_room"] = {
@@ -214,7 +213,7 @@ def move_forward(game):
     # Higher chance of encounter the deeper you go (optional scaling)
     encounter_chance = min(0.8, 0.4 + depth * 0.05)  # starts ~40%, maxes at 80%
 
-    if random.random() < encounter_chance:
+    if random() < encounter_chance:
         print("\nSomething stirs in the shadows...")
         input("Press Enter to fight...")
         run_combat(game)
@@ -223,14 +222,14 @@ def move_forward(game):
 
 def rest(game):
     heal = 8
-    before = game["player"]["stats"]["hp"]
-    game["player"]["stats"]["hp"] = min(game["player"]["stats"]["max_hp"], before + heal)
-    gained = game["player"]["stats"]["hp"] - before
+    before = game["player"].stats["hp"]
+    game["player"].stats["hp"] = min(game["player"].stats["max_hp"], before + heal)
+    gained = game["player"].stats["hp"] - before
     print(f"\nYou rest and recover {gained} HP.")
 
 
 def use_inventory(game):
-    inv = game["player"]["inventory"]
+    inv = game["player"].inventory
     if not inv:
         print("\nYour inventory is empty.")
         input("Press Enter...")
@@ -238,32 +237,48 @@ def use_inventory(game):
 
     print("\nInventory:")
     for i, item in enumerate(inv):
-        print(f"{i+1}) {item['name']}")
+        equipped = ""
+        if item is game["player"].weapon:
+            equipped = " (equipped weapon)"
+        elif item is game["player"].armor:
+            equipped = " (equipped armor)"
+        print(f"{i+1}) {item.name} ({item.type}{equipped})")
 
-    # Simple: use first potion or equip first weapon/armor
-    for item in inv[:]:
-        if item["type"] == "potion" and game["player"]["stats"]["hp"] < game["player"]["stats"]["max_hp"]:
-            heal = item["heal"]
-            before = game["player"]["stats"]["hp"]
-            game["player"]["stats"]["hp"] = min(game["player"]["stats"]["max_hp"], before + heal)
-            print(f"\nYou use {item['name']} (+{heal} HP)")
-            inv.remove(item)
-            input("Press Enter...")
-            return
-        elif item["type"] == "weapon" and not game["player"]["weapon"]:
-            game["player"]["weapon"] = item
-            inv.remove(item)
-            print(f"\nEquipped {item['name']} (+{item['strength']} STR)")
-            input("Press Enter...")
-            return
-        elif item["type"] == "armor" and not game["player"]["armor"]:
-            game["player"]["armor"] = item
-            inv.remove(item)
-            print(f"\nEquipped {item['name']} (+{item['defense']} DEF)")
-            input("Press Enter...")
-            return
+    choice = input("\nUse/equip item number (or Enter to cancel): ").strip()
+    if not choice.isdigit():
+        return
 
-    print("\nNothing to use or equip right now.")
+    idx = int(choice) - 1
+    if not (0 <= idx < len(inv)):
+        print("Invalid number.")
+        input("Press Enter...")
+        return
+
+    item = inv[idx]
+
+    if item.type == "potion":
+        healed = game["player"].stats["hp"]
+        game["player"].stats["hp"] = min(game["player"].stats["max_hp"], game["player"].stats["hp"] + item.value)
+        healed = game["player"].stats["hp"] - healed
+        print(f"\nYou drink {item.name} and recover {healed} HP!")
+        inv.remove(item)  # consume potion
+    elif item.type == "weapon":
+        if game["player"].weapon == item:
+            print(f"{item.name} is already equipped.")
+        else:
+            game["player"].weapon = item
+            game["player"].stats["strength"] += item.value
+            print(f"\nYou equip {item.name} (+{item.value} strength)!")
+    elif item.type == "armor":
+        if game["player"].armor == item:
+            print(f"{item.name} is already equipped.")
+        else:
+            game["player"].armor = item
+            game["player"].stats["defense"] += item.value
+            print(f"\nYou equip {item.name} (+{item.value} defense)!")
+    else:
+        print("Can't use that item.")
+
     input("Press Enter...")
 
 
@@ -272,9 +287,8 @@ def main():
     input("Press Enter to begin your descent...")
 
     # Give starting item for testing
-    game["player"]["inventory"].append({"type": "potion", "name": "Healing Potion", "heal": 12})
-
-    while game["running"] and game["player"]["alive"]:
+    game["player"].inventory.append(healing_potion)
+    while game["running"] and game["player"].is_alive():
         render_screen(game, mode="explore")
 
         print("\nWhat do you do?")
@@ -299,7 +313,7 @@ def main():
             print("\nYou escape the crypt alive...")
             game["running"] = False
 
-    if not game["player"]["alive"]:
+    if not game["player"].is_alive():
         print("\nGame Over")
 
 if __name__ == "__main__":

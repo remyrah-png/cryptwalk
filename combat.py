@@ -1,37 +1,35 @@
 # combat.py - Combat system module
 
+from items import healing_potion, iron_sword, leather_armor
+from random import random, choice
+
 def calculate_damage(attacker, defender):
-    atk = attacker["stats"]["strength"]
-    weapon = attacker.get("weapon")
-    if weapon:
-        atk += weapon.get("strength", 0)
+    atk = attacker.stats["strength"]
+    if attacker.weapon:
+        atk += attacker.weapon.value
 
-    defn = defender["stats"]["defense"]
-    armor = defender.get("armor")
-    if armor:
-        defn += armor.get("defense", 0)
+    defn = defender.stats["defense"]
+    if defender.armor:
+        defn += defender.armor.value
 
-    dmg = atk - defn
-    return max(1, dmg)
+    dmg = max(1, atk - defn)
+    return dmg  # <-- this line was missing
 
-
+        
 def apply_defend(entity):
-    entity["defending"] = True
-
+    entity.defending = True
 
 def apply_poison(target, dmg_per_turn=1, turns=3):
-    target["effects"].append({
+    target.effects.append({
         "type": "poison",
         "dmg": dmg_per_turn,
         "turns": turns
     })
 
-
 def apply_taunt(attacker, dmg_reduction=-2, turns=1):
-    """Taunt reduces attacker's damage when they attack"""
-    attacker["effects"].append({
+    attacker.effects.append({
         "type": "taunt",
-        "dmg": dmg_reduction,  # negative value
+        "dmg": dmg_reduction,  # negative
         "turns": turns
     })
 
@@ -41,50 +39,53 @@ def attack(game, attacker_key, defender_key, bonus_damage=0):
     defender = game[defender_key]
 
     base_dmg = calculate_damage(attacker, defender)
+    bonus_damage = 0
+    if attacker.weapon:
+        bonus_damage = attacker.weapon.value
     dmg = base_dmg + bonus_damage
 
     # Apply taunt effect (reduces attacker's damage)
-    for i, eff in enumerate(attacker.get("effects", [])):
-        if eff.get("type") == "taunt" and eff["turns"] > 0:
+    for i, eff in enumerate(attacker.effects[:]):
+        if eff["type"] == "taunt" and eff["turns"] > 0:
             dmg = max(1, dmg + eff["dmg"])  # dmg is negative
-            game["combat_log"].append(f"{attacker['name']} is taunted! Damage reduced!")
+            game["combat_log"].append(f"{attacker.name} is taunted! Damage reduced!")
             eff["turns"] -= 1
             if eff["turns"] <= 0:
-                attacker["effects"].pop(i)
+                attacker.effects.pop(i)
             break
 
     # Defending reduces damage
-    if defender.get("defending", False):
+    if getattr(defender, "defending", False):
         dmg = max(1, dmg - 2)
-        game["combat_log"].append(f"{defender['name']} reduces the damage!")
-        defender["defending"] = False
+        game["combat_log"].append(f"{defender.name} reduces the damage!")
+        defender.defending = False
 
-    defender["stats"]["hp"] = max(0, defender["stats"]["hp"] - dmg)
-    game["combat_log"].append(f"{attacker['name']} hits {defender['name']} for {dmg} damage!")
+    defender.stats["hp"] = max(0, defender.stats["hp"] - dmg)
+    game["combat_log"].append(f"{attacker.name} hits {defender.name} for {dmg} damage!")
 
     return dmg
 
 
 def process_effects(game, target_key):
     target = game[target_key]
-    effects = target.get("effects", [])
+    effects = target.effects[:]
     new_effects = []
 
     for eff in effects[:]:  # copy to allow removal
         if eff["type"] == "poison" and eff["turns"] > 0:
             dmg = eff["dmg"]
-            target["stats"]["hp"] = max(0, target["stats"]["hp"] - dmg)
-            game["combat_log"].append(f"{target['name']} takes {dmg} poison damage!")
+            target.stats["hp"] = max(0, target.stats["hp"] - dmg)
+            game["combat_log"].append(f"{target.name} takes {dmg} poison damage!")
             eff["turns"] -= 1
             if eff["turns"] > 0:
                 new_effects.append(eff)
             else:
-                game["combat_log"].append(f"{target['name']} is no longer poisoned.")
+                game["combat_log"].append(f"{target.name} is no longer poisoned.")
         else:
             new_effects.append(eff)
 
-    target["effects"] = new_effects
+    target.effects = new_effects
 
 
 def is_alive(entity):
-    return entity["stats"]["hp"] > 0
+    return entity.stats["hp"] > 0
