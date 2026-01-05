@@ -1,6 +1,5 @@
 {
-    "python.analysis.extraPaths": [
-        "."
-    ],
-    "python.linting.pylanceEnabled": true
+    "python.analysis.extraPaths": ["."],
+    "python.linting.pylanceEnabled": true,
+    "python.analysis.diagnosticMode": "workspace"
 }
