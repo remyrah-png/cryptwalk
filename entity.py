@@ -12,6 +12,11 @@ class CombatEntity:
         self.weapon = None
         self.armor = None
 
+    def attack(self, target):
+        damage = max(0, self.stats["strength"] - target.stats["defense"])
+        target.stats["hp"] -= damage
+        return damage
+
     def heal(self, amount):
         before = self.stats["hp"]
         self.stats["hp"] = min(self.stats["max_hp"], self.stats["hp"] + amount)
