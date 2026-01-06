@@ -213,7 +213,7 @@ def move_forward(game):
     encounter_chance = min(0.8, 0.4 + depth * 0.05)  # starts ~40%, maxes at 80%
 
     if random() < encounter_chance:
-    print("\nSomething stirs in the shadows...")
+        print("\nSomething stirs in the shadows...")
     input("Press Enter to fight...")
 
     # New: Trigger graphical battle
