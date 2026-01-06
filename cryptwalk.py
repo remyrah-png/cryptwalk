@@ -213,24 +213,23 @@ def move_forward(game):
     encounter_chance = min(0.8, 0.4 + depth * 0.05)  # starts ~40%, maxes at 80%
 
     if random() < encounter_chance:
-        print("\nSomething stirs in the shadows...")
-        input("Press Enter to fight...")
+    print("\nSomething stirs in the shadows...")
+    input("Press Enter to fight...")
 
-    from battle import run_battle  # Import here (safe if already at top)
+    # New: Trigger graphical battle
+    from battle import run_battle  # Import your battle function
 
-    outcome, gold_gained, exp_gained = run_battle(game["player"])
+    outcome, gold, exp = run_battle(game["player"])
 
     if outcome == "win":
-        game["player"].gold += gold_gained
-        game["player"].gain_exp(exp_gained)  # If you have this method
-        print(f"\nVictory! You defeated the enemy!")
-        print(f"Gained {gold_gained} gold and {exp_gained} EXP!")
+        game["player"].gold += gold
+        game["player"].gain_exp(exp)  # Use your method if exists
+        print(f"\nVictory! Gained {gold} gold and {exp} EXP!")
     elif outcome == "run":
-        print("\nYou successfully ran away!")
+        print("\nYou ran away!")
     elif outcome == "lose":
         print("\nYou were defeated...")
-        game["player"].stats["hp"] = 1  # Or set to 0 for game over
-        # Optional: game["running"] = False for game over
+        game["running"] = False  # Game over, or set HP to 1 for continue
     else:
         print("\n...The room is empty. For now.")
 
