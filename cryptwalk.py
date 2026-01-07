@@ -16,7 +16,7 @@ TEST_MODE = True
 game = {
     "turn": 1,
     "combat_log": [],
-    "active_turn": "player",
+    # "active_turn": "player"
     "running": True,
 
     "player": Player(),
