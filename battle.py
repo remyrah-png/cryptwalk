@@ -1,63 +1,69 @@
-import sys
-sys.path.append(".")
-
-import pygame
+import random
+from combat import attack, apply_defend, apply_poison, apply_taunt, process_effects
 from enemies import create_enemy
+from cryptwalk import game, render_screen  # Import game and render for logs/display
 
 def run_battle():
-    pygame.init()
+    # Spawn enemy (random type)
+    enemy_types = ["goblin", "skeleton", "orc"]
+    enemy_type = random.choice(enemy_types)
+    game["enemy"] = create_enemy(enemy_type)
+    game["combat_log"] = []  # Reset log
+    game["turn"] = 1
+    game["active_turn"] = "player"
 
-    SCREEN_WIDTH = 800
-    SCREEN_HEIGHT = 600
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("My RPG Battle")
-    clock = pygame.time.Clock()
+    print(f"\nEncounter: A {game['enemy'].name} appears!")
 
-    BLACK = (0, 0, 0)
-    WHITE = (255, 255, 255)
-    RED = (255, 0, 0)
-    GREEN = (0, 0, 0)
+    while game["player"].is_alive() and game["enemy"].is_alive():
+        render_screen(game, mode="combat")  # Show current state/logs
 
-    enemy_type = "goblin"  # Change to "skeleton" or "orc" to test!
+        if game["active_turn"] == "player":
+            # Player input with validation
+            while True:
+                choice = input("\nChoose: 1) Attack 2) Defend 3) Poison 4) Taunt: ").strip()
+                if choice == "1":
+                    attack(game, "player", "enemy")
+                    break
+                elif choice == "2":
+                    apply_defend(game["player"])
+                    game["combat_log"].append("You defend!")
+                    break
+                elif choice == "3":
+                    apply_poison(game["enemy"])
+                    break
+                elif choice == "4":
+                    apply_taunt(game["enemy"])
+                    break
+                else:
+                    print("Invalid! Choose 1-4.")
+            process_effects(game, "player")
+            game["active_turn"] = "enemy"
+        else:
+            # Enemy AI: random action
+            actions = ["attack", "defend", "poison", "taunt"]
+            enemy_choice = random.choice(actions)
+            if enemy_choice == "attack":
+                attack(game, "enemy", "player")
+            elif enemy_choice == "defend":
+                apply_defend(game["enemy"])
+                game["combat_log"].append(f"{game['enemy'].name} defends!")
+            elif enemy_choice == "poison":
+                apply_poison(game["player"])
+            elif enemy_choice == "taunt":
+                apply_taunt(game["player"])
+            process_effects(game, "enemy")
+            game["active_turn"] = "player"
+            game["turn"] += 1
 
-    enemy_image = pygame.image.load(f"assets/{enemy_type}.png")
-    enemy_image = pygame.transform.scale(enemy_image, (300, 300))
+    # Outcome
+    if game["player"].is_alive():
+        outcome = "win"
+        gold = random.randint(10, 20)
+        exp = random.randint(50, 100)
+    else:
+        outcome = "lose"
+        gold = 0
+        exp = 0
 
-    enemy_rect = enemy_image.get_rect()
-    enemy_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50)
-
-    enemy = create_enemy(enemy_type)
-    enemy_name = enemy.name
-    enemy_hp = enemy.stats["hp"]
-    enemy_max_hp = enemy.stats["max_hp"]
-
-    running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
-                running = False
-
-        screen.fill(BLACK)
-        screen.blit(enemy_image, enemy_rect)
-
-        font = pygame.font.SysFont("arial", 40)
-        name_text = font.render(enemy_name, True, WHITE)
-        screen.blit(name_text, (SCREEN_WIDTH // 2 - name_text.get_width() // 2, 80))
-
-        hp_bar_width = 400
-        hp_bar_height = 40
-        hp_ratio = enemy_hp / enemy_max_hp if enemy_max_hp > 0 else 0
-        pygame.draw.rect(screen, RED, (SCREEN_WIDTH // 2 - hp_bar_width // 2, 480, hp_bar_width, hp_bar_height))
-        pygame.draw.rect(screen, GREEN, (SCREEN_WIDTH // 2 - hp_bar_width // 2, 480, hp_bar_width * hp_ratio, hp_bar_height))
-    
-        hp_text = font.render(f"HP: {enemy_hp}/{enemy_max_hp}", True, WHITE)
-        screen.blit(hp_text, (SCREEN_WIDTH // 2 - hp_text.get_width() // 2, 530))
-
-        pygame.display.flip()
-        clock.tick(60)
-
-    pygame.quit()
-    return "win", 10, 20  # Return outcome, gold, exp - adjust as needed
-
-if __name__ == "__main__":
-    run_battle()
+    game["enemy"] = None  # Clear enemy
+    return outcome, gold, exp
