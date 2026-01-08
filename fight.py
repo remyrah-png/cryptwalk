@@ -1,25 +1,24 @@
 import random
 from combat import attack, apply_defend, apply_poison, apply_taunt, process_effects
 from enemies import create_enemy
-from cryptwalk import game, render_screen  # Import game and render for logs/display
+from cryptwalk import game, render_screen  # Import for logs/display
 
 def run_battle():
-    # Spawn enemy (random type)
+    # Spawn random enemy
     enemy_types = ["goblin", "skeleton", "orc"]
     enemy_type = random.choice(enemy_types)
     game["enemy"] = create_enemy(enemy_type)
-    game["combat_log"] = []  # Reset log
+    game["combat_log"] = []
     game["turn"] = 1
     game["active_turn"] = "player"
 
     print(f"\nEncounter: A {game['enemy'].name} appears!")
 
     while game["player"].is_alive() and game["enemy"].is_alive():
-        render_screen(game, mode="combat")  # Show current state/logs
+        render_screen(game, mode="combat")  # Show state
 
         if game["active_turn"] == "player":
-            # Player input with validation
-            while True:
+            while True:  # Validate input
                 choice = input("\nChoose: 1) Attack 2) Defend 3) Poison 4) Taunt: ").strip()
                 if choice == "1":
                     attack(game, "player", "enemy")
@@ -39,7 +38,7 @@ def run_battle():
             process_effects(game, "player")
             game["active_turn"] = "enemy"
         else:
-            # Enemy AI: random action
+            # Enemy AI
             actions = ["attack", "defend", "poison", "taunt"]
             enemy_choice = random.choice(actions)
             if enemy_choice == "attack":
@@ -60,10 +59,12 @@ def run_battle():
         outcome = "win"
         gold = random.randint(10, 20)
         exp = random.randint(50, 100)
+        print("You win!")
     else:
         outcome = "lose"
         gold = 0
         exp = 0
+        print("Game over.")
 
-    game["enemy"] = None  # Clear enemy
+    game["enemy"] = None
     return outcome, gold, exp

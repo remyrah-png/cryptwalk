@@ -9,7 +9,7 @@ from combat import (
     attack, apply_defend, apply_poison, apply_taunt,
     process_effects, calculate_damage
 )
-from battle import run_battle  # Added for graphical pop-up
+from fight import run_battle  # Added for graphical pop-up
 
 TEST_MODE = True
 
