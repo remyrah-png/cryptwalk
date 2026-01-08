@@ -1,7 +1,7 @@
 # cryptwalk.py - Main game file
 import os
 import random
-from random import random, choice # Added import
+from random import 
 from items import healing_potion, iron_sword, leather_armor # Added import
 from player import Player
 from entity import CombatEntity 
@@ -12,7 +12,6 @@ from combat import (
 from fight import run_battle  # Added for graphical pop-up
 
 TEST_MODE = True
-
 game = {
     "turn": 1,
     "combat_log": [],

@@ -1,9 +1,8 @@
 import random
 from combat import attack, apply_defend, apply_poison, apply_taunt, process_effects
 from enemies import create_enemy
-from cryptwalk import game, render_screen  # Import for logs/display
 
-def run_battle():
+def run_battle(game):
     # Spawn random enemy
     enemy_types = ["goblin", "skeleton", "orc"]
     enemy_type = random.choice(enemy_types)
@@ -15,7 +14,15 @@ def run_battle():
     print(f"\nEncounter: A {game['enemy'].name} appears!")
 
     while game["player"].is_alive() and game["enemy"].is_alive():
-        render_screen(game, mode="combat")  # Show state
+        # Simple print display (we'll add Pygame later)
+        print("\n======== Combat ======= ")
+        print(f"Turn: {game['turn']} ({game['active_turn'].capitalize()}'s turn)")
+        print(f"Player HP: {game['player'].stats['hp']}/{game['player'].stats['max_hp']}")
+        print(f"Enemy HP: {game['enemy'].stats['hp']}/{game['enemy'].stats['max_hp']}")
+        if game['combat_log']:
+            print("\nLogs:")
+            for log in game['combat_log'][-3:]:
+                print(log)
 
         if game["active_turn"] == "player":
             while True:  # Validate input
@@ -49,7 +56,7 @@ def run_battle():
             elif enemy_choice == "poison":
                 apply_poison(game["player"])
             elif enemy_choice == "taunt":
-                apply_taunt(game["player"])
+                    apply_taunt(game["player"])
             process_effects(game, "enemy")
             game["active_turn"] = "player"
             game["turn"] += 1
