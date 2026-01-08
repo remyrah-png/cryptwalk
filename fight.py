@@ -31,14 +31,14 @@ def run_battle(game):
                     attack(game, "player", "enemy")
                     break
                 elif choice == "2":
-                    apply_defend(game["player"])
+                    apply_defend(game, game["player"])
                     game["combat_log"].append("You defend!")
                     break
                 elif choice == "3":
-                    apply_poison(game["enemy"])
+                    apply_poison(game, game["enemy"])
                     break
                 elif choice == "4":
-                    apply_taunt(game["enemy"])
+                    apply_taunt(game, game["enemy"])
                     break
                 else:
                     print("Invalid! Choose 1-4.")
@@ -51,12 +51,12 @@ def run_battle(game):
             if enemy_choice == "attack":
                 attack(game, "enemy", "player")
             elif enemy_choice == "defend":
-                apply_defend(game["enemy"])
+                apply_defend(game, game["enemy"])
                 game["combat_log"].append(f"{game['enemy'].name} defends!")
             elif enemy_choice == "poison":
-                apply_poison(game["player"])
+                apply_poison(game, game["player"])
             elif enemy_choice == "taunt":
-                    apply_taunt(game["player"])
+                    apply_taunt(game, game["player"])
             process_effects(game, "enemy")
             game["active_turn"] = "player"
             game["turn"] += 1

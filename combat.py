@@ -1,5 +1,4 @@
 # combat.py - Combat system module
-
 from items import healing_potion, iron_sword, leather_armor
 from random import random, choice
 
@@ -16,10 +15,11 @@ def calculate_damage(attacker, defender):
     return dmg  # <-- this line was missing
 
         
-def apply_defend(entity):
+def apply_defend(game, entity):
     entity.defending = True
+    game["combat_log"].append(f"{entity.name} is defending!")
 
-def apply_poison(target, dmg_per_turn=1, turns=3):
+def apply_poison(game, target, dmg_per_turn=1, turns=3):
     target.effects.append({
         "type": "poison",
         "dmg": dmg_per_turn,
@@ -27,7 +27,7 @@ def apply_poison(target, dmg_per_turn=1, turns=3):
     })
     game["combat_log"].append(f"{target.name} is poisoned for {turns} turns!")
 
-def apply_taunt(attacker, dmg_reduction=-2, turns=1):
+def apply_taunt(game, attacker, dmg_reduction=-2, turns=1):
     attacker.effects.append({
         "type": "taunt",
         "dmg": dmg_reduction,  # negative

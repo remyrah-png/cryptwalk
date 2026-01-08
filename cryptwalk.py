@@ -1,7 +1,6 @@
 # cryptwalk.py - Main game file
 import os
 import random
-from random import 
 from items import healing_potion, iron_sword, leather_armor # Added import
 from player import Player
 from entity import CombatEntity 
@@ -90,10 +89,10 @@ def move_forward(game):
     game['world']['depth'] += 1
     generate_room(game)
     encounter_chance = 0.6 + (game['world']['depth'] * 0.05)
-    if random() < encounter_chance:
+    if random.random() < encounter_chance:
         print("\nSomething stirs in the shadows...")
         input("Press Enter to fight...")
-        outcome, gold, exp = run_battle()
+        outcome, gold, exp = run_battle(game)
         if outcome == "win":
             game["player"].gold += gold
             game["player"].gain_exp(exp)
