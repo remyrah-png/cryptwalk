@@ -1,18 +1,12 @@
 {
-    "python.analysis.extraPaths": ["."],
-    "python.linting.pylanceEnabled": true,
-    "python.analysis.diagnosticMode": "workspace"
-}  
-
-{
   "name": "Ubuntu Dev Container",
-  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",  // Or your base image
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",  // Use your current base image if different
   "runArgs": [
-    "--env=DISPLAY=${localEnv:DISPLAY}",
-    "--volume=/tmp/.X11-unix:/tmp/.X11-unix:rw",
-    "--network=host"  // Optional, but helps with display
+    "--env=WAYLAND_DISPLAY=${localEnv:WAYLAND_DISPLAY}",
+    "--env=XDG_RUNTIME_DIR=/tmp/xdg-runtime-dir",
+    "--volume=${localEnv:XDG_RUNTIME_DIR}/${localEnv:WAYLAND_DISPLAY}:/tmp/xdg-runtime-dir/${localEnv:WAYLAND_DISPLAY}:ro",
+    "--security-opt=seccomp=unconfined",  // Helps with SDL/Pygame permissions
+    "--network=host"
   ],
-  "features": {
-    "desktop-lite": {}  // Optional: Adds lightweight desktop if needed for testing
-  }
+  "postCreateCommand": "mkdir -p /tmp/xdg-runtime-dir && sudo apt update && sudo apt install -y libsdl2-2.0-0 libwayland-client0 libegl1-mesa libgbm1 libgles2-mesa"
 }
