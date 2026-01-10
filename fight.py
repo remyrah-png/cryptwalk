@@ -1,81 +1,117 @@
-import sys
-sys.path.append(".")  # Ensure current directory is in path
+# fight.py - Pygame battle pop-up
 
 import pygame
-import random
+from pygame.locals import *
 from combat import attack, apply_defend, apply_poison, apply_taunt, process_effects
-from enemies import create_enemy
 
-def run_battle(game):
-    # Spawn random enemy
-    enemy_types = ["goblin", "skeleton", "orc"]
-    enemy_type = random.choice(enemy_types)
-    game["enemy"] = create_enemy(enemy_type)
-    game["combat_log"] = []
-    game["turn"] = 1
-    game["active_turn"] = "player"
+pygame.init()
 
-    print(f"\nEncounter: A {game['enemy'].name} appears!")
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+FONT = pygame.font.SysFont("arial", 30)
 
-    while game["player"].is_alive() and game["enemy"].is_alive():
-        # Simple print display (we'll add Pygame later)
-        print("\n======== Combat ======= ")
-        print(f"Turn: {game['turn']} ({game['active_turn'].capitalize()}'s turn)")
-        print(f"Player HP: {game['player'].stats['hp']}/{game['player'].stats['max_hp']}")
-        print(f"Enemy HP: {game['enemy'].stats['hp']}/{game['enemy'].stats['max_hp']}")
-        if game['combat_log']:
-            print("\nLogs:")
-            for log in game['combat_log'][-3:]:
-                print(log)
+def draw_text(screen, text, color, x, y):
+    text_surface = FONT.render(text, True, color)
+    screen.blit(text_surface, (x, y))
 
-        if game["active_turn"] == "player":
-            while True:  # Validate input
-                choice = input("\nChoose: 1) Attack 2) Defend 3) Poison 4) Taunt: ").strip()
-                if choice == "1":
+def pygame_battle(game):
+    print("Attempting to open Pygame window...")
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    pygame.display.set_caption("Cryptwalk Battle")
+    clock = pygame.time.Clock()
+
+    player = game["player"]
+    enemy = game["enemy"]
+
+    # Load enemy image (assume assets/goblin.png exists; add more for other types)
+    enemy_type = enemy.name.lower()
+    try:
+        enemy_image = pygame.image.load(f"assets/{enemy_type}.png")
+        enemy_image = pygame.transform.scale(enemy_image, (300, 300))
+    except:
+        enemy_image = None  # Fallback if no image
+
+    enemy_rect = pygame.Rect(SCREEN_WIDTH // 2 + 100, SCREEN_HEIGHT // 2 - 150, 300, 300) if enemy_image else None
+
+    # For player sprite (use uploaded blue character sprite sheet later; static for now)
+    # Placeholder: No image yet, just stats
+
+    message = ""
+    player_turn = True
+    running = True
+
+    while running and player.is_alive() and enemy.is_alive():
+        screen.fill(BLACK)
+
+        # Draw enemy
+        if enemy_image:
+            screen.blit(enemy_image, enemy_rect)
+
+        # Draw stats
+        draw_text(screen, f"{player.name} HP: {player.stats['hp']}/{player.stats['max_hp']}", WHITE, 50, 50)
+        draw_text(screen, f"{enemy.name} HP: {enemy.stats['hp']}/{enemy.stats['max_hp']}", WHITE, SCREEN_WIDTH - 300, 50)
+        draw_text(screen, message, RED, 50, 100)
+
+        # HP bars
+        hp_bar_width = 200
+        hp_bar_height = 20
+
+        # Player HP bar
+        pygame.draw.rect(screen, RED, (50, 80, hp_bar_width, hp_bar_height))
+        player_hp_ratio = player.stats["hp"] / player.stats["max_hp"] if player.stats["max_hp"] > 0 else 0
+        pygame.draw.rect(screen, GREEN, (50, 80, hp_bar_width * player_hp_ratio, hp_bar_height))
+
+        # Enemy HP bar
+        pygame.draw.rect(screen, RED, (SCREEN_WIDTH - 250, 80, hp_bar_width, hp_bar_height))
+        enemy_hp_ratio = enemy.stats["hp"] / enemy.stats["max_hp"] if enemy.stats["max_hp"] > 0 else 0
+        pygame.draw.rect(screen, GREEN, (SCREEN_WIDTH - 250, 80, hp_bar_width * enemy_hp_ratio, hp_bar_height))
+
+        # Instructions
+        draw_text(screen, "Press 1: Attack | 2: Defend | 3: Poison | 4: Taunt | ESC: Quit", WHITE, 50, SCREEN_HEIGHT - 50)
+
+        pygame.display.flip()
+        clock.tick(30)
+
+        for event in pygame.event.get():
+            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
+                running = False
+            elif event.type == KEYDOWN and player_turn:
+                if event.key == K_1:
                     attack(game, "player", "enemy")
-                    break
-                elif choice == "2":
-                    apply_defend(game, game["player"])
-                    game["combat_log"].append("You defend!")
-                    break
-                elif choice == "3":
-                    apply_poison(game, game["enemy"])
-                    break
-                elif choice == "4":
-                    apply_taunt(game, game["enemy"])
-                    break
-                else:
-                    print("Invalid! Choose 1-4.")
-            process_effects(game, "player")
-            game["active_turn"] = "enemy"
-        else:
-            # Enemy AI
-            actions = ["attack", "defend", "poison", "taunt"]
-            enemy_choice = random.choice(actions)
-            if enemy_choice == "attack":
-                attack(game, "enemy", "player")
-            elif enemy_choice == "defend":
-                apply_defend(game, game["enemy"])
-                game["combat_log"].append(f"{game['enemy'].name} defends!")
-            elif enemy_choice == "poison":
-                apply_poison(game, game["player"])
-            elif enemy_choice == "taunt":
-                    apply_taunt(game, game["player"])
-            process_effects(game, "enemy")
-            game["active_turn"] = "player"
-            game["turn"] += 1
+                    message = game["combat_log"][-1]
+                elif event.key == K_2:
+                    apply_defend(player)
+                    message = "You brace for impact!"
+                    game["combat_log"].append(message)
+                elif event.key == K_3:
+                    apply_poison(game, enemy)
+                    message = game["combat_log"][-1]
+                elif event.key == K_4:
+                    apply_taunt(game, enemy)
+                    message = game["combat_log"][-1]
+                player_turn = False
 
-    # Outcome
-    if game["player"].is_alive():
-        outcome = "win"
-        gold = random.randint(10, 20)
-        exp = random.randint(50, 100)
-        print("You win!")
+        if not player_turn and enemy.is_alive():
+            # Enemy turn
+            attack(game, "enemy", "player")
+            message = game["combat_log"][-1]
+            process_effects(game, "player")  # Apply effects to player
+            process_effects(game, "enemy")   # Apply effects to enemy
+            player_turn = True
+
+    # End battle screen
+    screen.fill(BLACK)
+    if player.is_alive():
+        draw_text(screen, "Victory!", GREEN, SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2)
     else:
-        outcome = "lose"
-        gold = 0
-        exp = 0
-        print("Game over.")
+        draw_text(screen, "Defeat...", RED, SCREEN_WIDTH // 2 - 50, SCREEN_HEIGHT // 2)
+    pygame.display.flip()
+    pygame.time.wait(2000)  # Show for 2 seconds
 
-    game["enemy"] = None
-    return outcome, gold, exp
+    pygame.quit()
+    print("Pygame window closed.")
+# No standalone run here—called from cryptwalk.py

@@ -1,5 +1,5 @@
 # combat.py - Combat system module
-from items import healing_potion, iron_sword, leather_armor
+
 from random import random, choice
 
 def calculate_damage(attacker, defender):
@@ -12,12 +12,10 @@ def calculate_damage(attacker, defender):
         defn += defender.armor.value
 
     dmg = max(1, atk - defn)
-    return dmg  # <-- this line was missing
+    return dmg
 
-        
-def apply_defend(game, entity):
+def apply_defend(entity):
     entity.defending = True
-    game["combat_log"].append(f"{entity.name} is defending!")
 
 def apply_poison(game, target, dmg_per_turn=1, turns=3):
     target.effects.append({
@@ -27,36 +25,31 @@ def apply_poison(game, target, dmg_per_turn=1, turns=3):
     })
     game["combat_log"].append(f"{target.name} is poisoned for {turns} turns!")
 
-def apply_taunt(game, attacker, dmg_reduction=-2, turns=1):
-    attacker.effects.append({
+def apply_taunt(game, target, dmg_reduction=-2, turns=1):
+    target.effects.append({
         "type": "taunt",
-        "dmg": dmg_reduction,  # negative
+        "dmg": dmg_reduction,  # negative, reduces target's damage output
         "turns": turns
     })
-    game["combat_log"].append(f"{attacker.name} is taunted for {turns} turns!")
+    game["combat_log"].append(f"{target.name} is taunted for {turns} turns! (Damage reduced)")
 
-def attack(game, attacker_key, defender_key, bonus_damage=0):
+def attack(game, attacker_key, defender_key):
     attacker = game[attacker_key]
     defender = game[defender_key]
 
-    base_dmg = calculate_damage(attacker, defender)
-    bonus_damage = 0
-    if attacker.weapon:
-        bonus_damage = attacker.weapon.value
-    dmg = base_dmg + bonus_damage
+    dmg = calculate_damage(attacker, defender)
 
-    # Apply taunt effect (reduces attacker's damage)
-    for i, eff in enumerate(attacker.effects[:]):
+    # Apply taunt effect (reduces attacker's damage if taunted)
+    for eff in attacker.effects[:]:
         if eff["type"] == "taunt" and eff["turns"] > 0:
-            dmg = max(1, dmg + eff["dmg"])  # dmg is negative
+            dmg = max(1, dmg + eff["dmg"])  # dmg_reduction is negative
             game["combat_log"].append(f"{attacker.name} is taunted! Damage reduced!")
             eff["turns"] -= 1
             if eff["turns"] <= 0:
-                attacker.effects.pop(i)
-            break
+                attacker.effects.remove(eff)
 
     # Defending reduces damage
-    if getattr(defender, "defending", False):
+    if defender.defending:
         dmg = max(1, dmg - 2)
         game["combat_log"].append(f"{defender.name} reduces the damage!")
         defender.defending = False
@@ -66,13 +59,11 @@ def attack(game, attacker_key, defender_key, bonus_damage=0):
 
     return dmg
 
-
 def process_effects(game, target_key):
     target = game[target_key]
-    effects = target.effects[:]
     new_effects = []
 
-    for eff in effects[:]:  # copy to allow removal
+    for eff in target.effects[:]:
         if eff["type"] == "poison" and eff["turns"] > 0:
             dmg = eff["dmg"]
             target.stats["hp"] = max(0, target.stats["hp"] - dmg)
@@ -86,7 +77,3 @@ def process_effects(game, target_key):
             new_effects.append(eff)
 
     target.effects = new_effects
-
-
-def is_alive(entity):
-    return entity.stats["hp"] > 0

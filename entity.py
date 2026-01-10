@@ -1,3 +1,5 @@
+import random
+
 class CombatEntity:
     def __init__(self, name, hp, max_hp, strength, defense):
         self.name = name
