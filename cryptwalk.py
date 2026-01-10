@@ -92,6 +92,7 @@ def move_forward(game):
     if random.random() < encounter_chance:
         print("\nSomething stirs in the shadows...")
         input("Press Enter to fight...")
+        from fight import run_battle
         outcome, gold, exp = run_battle(game)
         if outcome == "win":
             game["player"].gold += gold

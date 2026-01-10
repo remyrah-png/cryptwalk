@@ -1,3 +1,7 @@
+import sys
+sys.path.append(".")  # Ensure current directory is in path
+
+import pygame
 import random
 from combat import attack, apply_defend, apply_poison, apply_taunt, process_effects
 from enemies import create_enemy
