@@ -3,3 +3,16 @@
     "python.linting.pylanceEnabled": true,
     "python.analysis.diagnosticMode": "workspace"
 }  
+
+{
+  "name": "Ubuntu Dev Container",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",  // Or your base image
+  "runArgs": [
+    "--env=DISPLAY=${localEnv:DISPLAY}",
+    "--volume=/tmp/.X11-unix:/tmp/.X11-unix:rw",
+    "--network=host"  // Optional, but helps with display
+  ],
+  "features": {
+    "desktop-lite": {}  // Optional: Adds lightweight desktop if needed for testing
+  }
+}
