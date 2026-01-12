@@ -120,65 +120,94 @@ def enemy_turn(game):
 
 
 def run_combat(game):
-
+    pygame.init()  # Start Pygame
+    SCREEN_WIDTH = 800
+    SCREEN_HEIGHT = 600
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    pygame.display.set_caption("Cryptwalk Battle")
+    clock = pygame.time.Clock()
+    
+    BLACK = (0, 0, 0)
+    WHITE = (255, 255, 255)
+    RED = (255, 0, 0)
+    GREEN = (0, 255, 0)
+    
+    font = pygame.font.SysFont("arial", 40)  # For text
+    
     print("\n⚔ A Goblin ambushes you!")
     input("Press Enter to begin combat...")
     
     depth = game["world"]["depth"]
-    scale = 1 + depth * 0.1  # +10% stats per level deeper
-    
-    # Setup enemy (scale if needed)
-    game["enemy"] = CombatEntity("Goblin", 20, 20, 6, 2)  # Adjust scaling if desired: e.g., hp * scale
-    
+    scale = 1 + depth * .1  # +10% stats per level deeper
+    game["enemy"] = CombatEntity("Goblin", 20, 20, 6, 2)
     game["combat_log"].clear()
     game["turn"] = 1
-    game["active_turn"] = "player"  # Start with player
     
-    while game["player"].is_alive() and game["enemy"] and game["enemy"].stats["hp"] > 0:
-        # Tick effects at START of each full turn (prevents instant poison kill)
-        process_effects(game, "player")
+    running = True  # Pygame loop control
+    while running and game["player"].is_alive() and game["enemy"] and game["enemy"].stats["hp"] > 0:
+        # Process events (e.g., close window)
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                running = False
+                game["running"] = False  # Exit game if window closed
+        
+        # Game logic (your original loop)
         process_effects(game, "enemy")
+        process_effects(game, "player")
         
-        # Early check after effects (e.g., poison DoT kills)
-        if not game["player"].is_alive():
-            game["combat_log"].append("You succumb to your wounds...")
-            render_screen(game, mode="combat")
-            input("\nYou have been defeated...")
-            return
-        if game["enemy"].stats["hp"] <= 0:
-            game["combat_log"].append("Goblin defeated!")
-            render_screen(game, mode="combat")
-            input("\nVictory! Press Enter...")
-            
-            # Rewards
-            game["player"].gold += 10  # FIXED: dot notation for attribute
-            print("\nSearching the body...")
-            if random.random() < 0.6:  # 60% chance
-                loot = choice([healing_potion, iron_sword, leather_armor])
-                game["player"].inventory.append(loot)
-                print(f"You found a {loot.name}! Added to inventory.")
-            else:
-                print("Nothing useful found.")
-            
-            game["enemy"] = None
-            return
+        if game["enemy"].stats["hp"] <= 0 or not game["player"].is_alive():
+            break
         
-        render_screen(game, mode="combat")
+        render_screen(game, mode="combat")  # Keep text render
         
-        # Player turn
         if game["active_turn"] == "player":
             player_turn(game)
             game["active_turn"] = "enemy"
         
-        # Enemy turn (only if still alive after player/effects)
         if game["active_turn"] == "enemy" and game["enemy"] and game["enemy"].stats["hp"] > 0:
             enemy_turn(game)
             game["active_turn"] = "player"
         
         game["turn"] += 1
+        
+        # Draw Pygame popup (simple HP bar, enemy name)
+        screen.fill(BLACK)
+        name_text = font.render(game["enemy"].name, True, WHITE)
+        screen.blit(name_text, (SCREEN_WIDTH // 2 - name_text.get_width() // 2, 80))
+        
+        hp_bar_width = 400
+        hp_bar_height = 40
+        hp_ratio = game["enemy"].stats["hp"] / game["enemy"].stats["max_hp"] if game["enemy"].stats["max_hp"] > 0 else 0
+        pygame.draw.rect(screen, RED, (SCREEN_WIDTH // 2 - hp_bar_width // 2, 480, hp_bar_width, hp_bar_height))
+        pygame.draw.rect(screen, GREEN, (SCREEN_WIDTH // 2 - hp_bar_width // 2, 480, hp_bar_width * hp_ratio, hp_bar_height))
+        
+        hp_text = font.render(f"HP: {game['enemy'].stats['hp']}/{game['enemy'].stats['max_hp']}", True, WHITE)
+        screen.blit(hp_text, (SCREEN_WIDTH // 2 - hp_text.get_width() // 2, 530))
+        
+        pygame.display.flip()  # Update window
+        clock.tick(30)  # 30 FPS, non-blocking
     
-    # Fallback (shouldn't reach here, but safe)
+    # Victory/defeat (your code)
+    if game["player"].is_alive():
+        game["combat_log"].append("Goblin defeated!")
+        render_screen(game, mode="combat")
+        input("\nVictory! Press Enter...")
+        game["player"].gold += 10
+        print("\nSearching the body...")
+        if random() < 0.6:
+            loot = choice([healing_potion, iron_sword, leather_armor])
+            game["player"].inventory.append(loot)
+            print(f"You found a {loot.name}! Added to inventory.")
+        else:
+            print("Nothing useful found.")
+    
+    else:
+        game["player"].is_alive = False
+        render_screen(game, mode="combat")
+        input("\nYou have been defeated...")
+    
     game["enemy"] = None
+    pygame.quit()  # Clean up Pygame
 
 def roll_encounter():
     return random() < 0.5
