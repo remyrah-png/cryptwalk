@@ -120,53 +120,65 @@ def enemy_turn(game):
 
 
 def run_combat(game):
+
     print("\n⚔ A Goblin ambushes you!")
     input("Press Enter to begin combat...")
-
+    
     depth = game["world"]["depth"]
-    scale = 1 + depth * .1 # +10% stats per level deeper
-
-    game["enemy"] = CombatEntity("Goblin", 20, 20, 6, 2)
+    scale = 1 + depth * 0.1  # +10% stats per level deeper
+    
+    # Setup enemy (scale if needed)
+    game["enemy"] = CombatEntity("Goblin", 20, 20, 6, 2)  # Adjust scaling if desired: e.g., hp * scale
+    
     game["combat_log"].clear()
     game["turn"] = 1
-
+    game["active_turn"] = "player"  # Start with player
+    
     while game["player"].is_alive() and game["enemy"] and game["enemy"].stats["hp"] > 0:
-        render_screen(game, mode="combat")
-
-        if game["active_turn"] == "player":
-            player_turn(game)
-            process_effects(game, "enemy")
-            if game["enemy"].stats["hp"] <= 0:
-                game["combat_log"].append("Goblin defeated!")
-                render_screen(game, mode="combat")
-                input("\nVictory! Press Enter...")
-                game["player"]["gold"] += 10
-             
-                print("\nSearching the body...")
-
-            if random() < 0.6:  # 60% chance of loot
+        # Tick effects at START of each full turn (prevents instant poison kill)
+        process_effects(game, "player")
+        process_effects(game, "enemy")
+        
+        # Early check after effects (e.g., poison DoT kills)
+        if not game["player"].is_alive():
+            game["combat_log"].append("You succumb to your wounds...")
+            render_screen(game, mode="combat")
+            input("\nYou have been defeated...")
+            return
+        if game["enemy"].stats["hp"] <= 0:
+            game["combat_log"].append("Goblin defeated!")
+            render_screen(game, mode="combat")
+            input("\nVictory! Press Enter...")
+            
+            # Rewards
+            game["player"].gold += 10  # FIXED: dot notation for attribute
+            print("\nSearching the body...")
+            if random.random() < 0.6:  # 60% chance
                 loot = choice([healing_potion, iron_sword, leather_armor])
                 game["player"].inventory.append(loot)
                 print(f"You found a {loot.name}! Added to inventory.")
             else:
                 print("Nothing useful found.")
-                game["enemy"] = None
-                return
-
+            
+            game["enemy"] = None
+            return
+        
+        render_screen(game, mode="combat")
+        
+        # Player turn
+        if game["active_turn"] == "player":
+            player_turn(game)
             game["active_turn"] = "enemy"
-
-        if game["active_turn"] == "enemy":
+        
+        # Enemy turn (only if still alive after player/effects)
+        if game["active_turn"] == "enemy" and game["enemy"] and game["enemy"].stats["hp"] > 0:
             enemy_turn(game)
-            process_effects(game, "player")
-            if game["player"].stats["hp"] <= 0:
-                game["player"].is_alive = False
-                render_screen(game, mode="combat")
-                input("\nYou have been defeated...")
-                return
-
             game["active_turn"] = "player"
-            game["turn"] += 1
-
+        
+        game["turn"] += 1
+    
+    # Fallback (shouldn't reach here, but safe)
+    game["enemy"] = None
 
 def roll_encounter():
     return random() < 0.5
