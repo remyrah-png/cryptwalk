@@ -1,6 +1,6 @@
 from player import Player
 from enemies import create_enemy
-
+from cryptwalk import game
 def main():
     print("Game starting...")
     player = Player()
@@ -8,7 +8,8 @@ def main():
     
     # Simple combat loop (text-based for now)
     while player.is_alive() and enemy.is_alive():
-        player.attack(enemy)  # Player turn
+        print(dir(Player))
+        player.attack(enemy, game)  # Player turn
         if enemy.is_alive():
             enemy.attack(player)  # Enemy turn
     

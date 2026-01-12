@@ -12,6 +12,9 @@ class CombatEntity:
         self.weapon = None
         self.armor = None
 
+    def attack(self, target):
+        pass  # To be implemented in subclasses
+    
     def heal(self, amount):
         before = self.stats["hp"]
         self.stats["hp"] = min(self.stats["max_hp"], self.stats["hp"] + amount)

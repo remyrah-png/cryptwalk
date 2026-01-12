@@ -3,6 +3,7 @@
 from items import healing_potion, iron_sword, leather_armor
 from random import random, choice
 
+
 def calculate_damage(attacker, defender):
     atk = attacker.stats["strength"]
     if attacker.weapon:
@@ -20,6 +21,7 @@ def apply_defend(entity):
     entity.defending = True
 
 def apply_poison(target, dmg_per_turn=1, turns=3):
+    from cryptwalk import game
     target.effects.append({
         "type": "poison",
         "dmg": dmg_per_turn,
@@ -28,6 +30,7 @@ def apply_poison(target, dmg_per_turn=1, turns=3):
     game["combat_log"].append(f"{target.name} is poisoned for {turns} turns!")
 
 def apply_taunt(attacker, dmg_reduction=-2, turns=1):
+    from cryptwalk import game
     attacker.effects.append({
         "type": "taunt",
         "dmg": dmg_reduction,  # negative
