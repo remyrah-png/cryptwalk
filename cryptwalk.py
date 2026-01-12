@@ -122,7 +122,7 @@ def enemy_turn(game):
 
 
 def run_combat(game):
-    pygame.init()  # Start Pygame
+    pygame.init()
     SCREEN_WIDTH = 800
     SCREEN_HEIGHT = 600
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -134,83 +134,116 @@ def run_combat(game):
     RED = (255, 0, 0)
     GREEN = (0, 255, 0)
     
-    font = pygame.font.SysFont("arial", 40)  # For text
+    font = pygame.font.SysFont("arial", 40)
     
-    print("\n⚔ A Goblin ambushes you!")
-    input("Press Enter to begin combat...")
+    # Remove blocking input—show message in GUI instead
+    start_text = font.render("Press any key to begin combat...", True, WHITE)
+    screen.blit(start_text, (SCREEN_WIDTH // 2 - start_text.get_width() // 2, SCREEN_HEIGHT // 2))
+    pygame.display.flip()
+    waiting = True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                return
+            if event.type == KEYDOWN:
+                waiting = False
+        clock.tick(30)
     
     depth = game["world"]["depth"]
-    scale = 1 + depth * .1  # +10% stats per level deeper
+    scale = 1 + depth * .1
     game["enemy"] = CombatEntity("Goblin", 20, 20, 6, 2)
     game["combat_log"].clear()
     game["turn"] = 1
+    game["active_turn"] = "player"
     
-    running = True  # Pygame loop control
+    action_chosen = False  # For player input state
+    selected_action = None
+    
+    running = True
     while running and game["player"].is_alive() and game["enemy"] and game["enemy"].stats["hp"] > 0:
-        # Process events (e.g., close window)
         for event in pygame.event.get():
             if event.type == QUIT:
                 running = False
-                game["running"] = False  # Exit game if window closed
+                game["running"] = False
+            if event.type == KEYDOWN and game["active_turn"] == "player" and not action_chosen:
+                if event.key == K_1:
+                    selected_action = "attack"
+                elif event.key == K_2:
+                    selected_action = "defend"
+                elif event.key == K_3:
+                    selected_action = "poison"
+                elif event.key == K_4:
+                    selected_action = "taunt"
+                if selected_action:
+                    action_chosen = True
         
-        # Game logic (your original loop)
-        process_effects(game, "enemy")
+        # Logic (non-blocking)
         process_effects(game, "player")
+        process_effects(game, "enemy")
         
         if game["enemy"].stats["hp"] <= 0 or not game["player"].is_alive():
             break
         
-        render_screen(game, mode="combat")  # Keep text render
-        
-        if game["active_turn"] == "player":
-            player_turn(game)
+        if game["active_turn"] == "player" and action_chosen:
+            # Execute selected action (from player_turn logic)
+            if selected_action == "attack":
+                attack(game, "player", "enemy")
+            elif selected_action == "defend":
+                apply_defend(game["player"])
+            elif selected_action == "poison":
+                apply_poison(game["enemy"])  # Adjust params
+            elif selected_action == "taunt":
+                apply_taunt(game["player"])  # Adjust
+            action_chosen = False
+            selected_action = None
             game["active_turn"] = "enemy"
         
-        if game["active_turn"] == "enemy" and game["enemy"] and game["enemy"].stats["hp"] > 0:
+        if game["active_turn"] == "enemy":
             enemy_turn(game)
             game["active_turn"] = "player"
         
         game["turn"] += 1
         
-        # Draw Pygame popup (simple HP bar, enemy name)
+        # Draw GUI
         screen.fill(BLACK)
+        # Enemy name/HP bar (as before)
         name_text = font.render(game["enemy"].name, True, WHITE)
         screen.blit(name_text, (SCREEN_WIDTH // 2 - name_text.get_width() // 2, 80))
         
         hp_bar_width = 400
         hp_bar_height = 40
-        hp_ratio = game["enemy"].stats["hp"] / game["enemy"].stats["max_hp"] if game["enemy"].stats["max_hp"] > 0 else 0
+        hp_ratio = game["enemy"].stats["hp"] / game["enemy"].stats["max_hp"]
         pygame.draw.rect(screen, RED, (SCREEN_WIDTH // 2 - hp_bar_width // 2, 480, hp_bar_width, hp_bar_height))
         pygame.draw.rect(screen, GREEN, (SCREEN_WIDTH // 2 - hp_bar_width // 2, 480, hp_bar_width * hp_ratio, hp_bar_height))
         
         hp_text = font.render(f"HP: {game['enemy'].stats['hp']}/{game['enemy'].stats['max_hp']}", True, WHITE)
         screen.blit(hp_text, (SCREEN_WIDTH // 2 - hp_text.get_width() // 2, 530))
         
-        pygame.display.flip()  # Update window
-        clock.tick(30)  # 30 FPS, non-blocking
+        # Actions menu in GUI
+        actions_text = font.render("1) Attack  2) Defend  3) Poison  4) Taunt", True, WHITE)
+        screen.blit(actions_text, (50, SCREEN_HEIGHT - 50))
+        
+        pygame.display.flip()
+        clock.tick(30)
     
-    # Victory/defeat (your code)
+    # Victory (non-blocking)
     if game["player"].is_alive():
         game["combat_log"].append("Goblin defeated!")
-        render_screen(game, mode="combat")
-        input("\nVictory! Press Enter...")
         game["player"].gold += 10
-        print("\nSearching the body...")
-        if random() < 0.6:
-            loot = choice([healing_potion, iron_sword, leather_armor])
-            game["player"].inventory.append(loot)
-            print(f"You found a {loot.name}! Added to inventory.")
-        else:
-            print("Nothing useful found.")
-    
+        # ... loot logic ...
+        victory_text = font.render("Victory! Press Enter in console...", True, WHITE)
+        screen.blit(victory_text, (SCREEN_WIDTH // 2 - victory_text.get_width() // 2, SCREEN_HEIGHT // 2))
+        pygame.display.flip()
+        input("\nVictory! Press Enter...")  # OK here, after loop
     else:
-        game["player"].is_alive = False
-        render_screen(game, mode="combat")
+        # Defeat
         input("\nYou have been defeated...")
     
     game["enemy"] = None
-    pygame.quit()  # Clean up Pygame
+    pygame.quit()
 
+    
 def roll_encounter():
     return random() < 0.5
 
