@@ -9,6 +9,8 @@ from combat import (
     attack, apply_defend, apply_poison, apply_taunt,
     process_effects, calculate_damage
 )
+import pygame  # Add this
+from pygame.locals import *  # For events
 
 TEST_MODE = True
 
