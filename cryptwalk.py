@@ -293,6 +293,11 @@ class Game:
         self.screen.blit(overlay, (0, 0))
 
     def draw_combat_popup(self):
+        self.enemy_frames = []
+        self.current_frame = 0
+        self.frame_timer = 0
+        self.frame_rate = 100  # ms per frame
+        self.player_image = None
         # Lazy-load goblin sprite (safe: attribute set in __init__)
         if getattr(self, "goblin_image", None) is None:
             try:

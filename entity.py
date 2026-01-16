@@ -1,3 +1,4 @@
+
 class CombatEntity:
     def __init__(self, name, hp, max_hp, strength, defense):
         self.name = name
@@ -22,3 +23,5 @@ class CombatEntity:
 
     def is_alive(self):
         return self.stats["hp"] > 0
+
+   
