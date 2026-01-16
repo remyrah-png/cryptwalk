@@ -9,17 +9,17 @@ def create_enemy(enemy_type):
             strength=5,
             defense=2
         )
-    elif enemy_type == "skeleton":
+    elif enemy_type == "Orc":
         return CombatEntity(
-            name="Skeleton",
+            name="Orc",
             hp=40,
             max_hp=40,
             strength=7,
             defense=3
         )
-    elif enemy_type == "orc":
+    elif enemy_type == "Ogre":
         return CombatEntity(
-            name="Orc",
+            name="Ogre",
             hp=60,
             max_hp=60,
             strength=10,

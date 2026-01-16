@@ -1,396 +1,376 @@
-# cryptwalk.py - Main game file
+import sys
 import os
-import random
-from random import random, choice # Added import
-from items import healing_potion, iron_sword, leather_armor # Added import
+
+from scripts.battle import SCREEN_WIDTH, SCREEN_HEIGHT
+sys.path.append("..")  # For imports if needed
+
+import pygame
+# Game constants
+FPS = 60
+
+# Colors
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 120, 255)
+YELLOW = (255, 255, 0)
+DARK_GRAY = (30, 30, 30)
+from enum import Enum
+from dataclasses import dataclass
+from typing import List, Optional, Dict
+from pygame.math import Vector2
+
+# Import user's modules (adjust paths if needed)
 from player import Player
-from entity import CombatEntity 
+from enemies import create_enemy
+from entity import CombatEntity
 from combat import (
     attack, apply_defend, apply_poison, apply_taunt,
-    process_effects, calculate_damage
+    process_effects, calculate_damage, is_alive
 )
-import pygame  # Add this
-from pygame.locals import *  # For events
+from items import healing_potion, iron_sword, leather_armor  # For future inv
+import random
+from random import choice
 
-TEST_MODE = True
 
-game = {
-    "turn": 1,
-    "combat_log": [],
-    "active_turn": "player",
-    "running": True,
+class GameState(Enum):
+    OVERWORLD = 1
+    COMBAT_POPUP = 2
+    INVENTORY_POPUP = 3  # Bonus: Quick inv access
 
-    "player": Player(),
+@dataclass
+class Tween:
+    start_pos: Vector2
+    end_pos: Vector2
+    start_scale: float
+    end_scale: float
+    duration: int  # frames
+    progress: int = 0
+    rotation: float = 0.0  # Total rotation
 
-"world":{
-    "depth": 0,
-    "current_room": {
-    "name": "Crypt Entrance",
-    "desc": "Cold air spills from a cracked stone doorway. The adventure begins."
+    def update(self) -> bool:
+        self.progress += 1
+        if self.progress >= self.duration:
+            self.progress = self.duration
+            t = 1.0
+        else:
+            t = self.progress / self.duration
+        t_eased = 1 - (1 - t) ** 2  # Ease-out
+        # rotation reflects current eased progress (0..360)
+        self.rotation = 360 * t_eased
+        return self.progress >= self.duration
+
+class JumpSprite:
+    def __init__(self, pos: Vector2, color: tuple, size: int = 32, image_path: Optional[str] = None):
+        self.pos = pos.copy()
+        self.target_pos = pos.copy()
+        self.color = color
+        self.size = size
+        self.tween: Optional[Tween] = None
+        self.scale = 1.0
+        self.rotation = 0.0
+        self.image = None
+        if image_path and os.path.exists(image_path):
+            self.image = pygame.image.load(image_path)
+            self.image = pygame.transform.scale(self.image, (size, size))
+        self.surface = pygame.Surface((size, size))
+        self.surface.fill(color)  # Fallback rect
+
+    def start_jump(self, end_pos: Vector2, duration: int = 30):
+        self.tween = Tween(self.pos.copy(), end_pos, self.scale, 1.2, duration)
+        self.target_pos = end_pos
+
+    def update(self):
+        if self.tween:
+            done = self.tween.update()
+            t = self.tween.progress / self.tween.duration
+            # Interpolate position and scale manually
+            self.pos = self.tween.start_pos + (self.tween.end_pos - self.tween.start_pos) * t
+            self.scale = self.tween.start_scale + (self.tween.end_scale - self.tween.start_scale) * t
+            # Tween.rotation is the current rotation for this progress
+            self.rotation = self.tween.rotation
+            if done:
+                # finalize to exact end state
+                self.pos = self.tween.end_pos.copy()
+                self.scale = self.tween.end_scale
+                self.rotation = self.tween.rotation
+                self.tween = None
+
+    def draw(self, screen: pygame.Surface, arena_offset: Vector2 = Vector2(0,0)):
+        draw_pos = self.pos + arena_offset
+        scaled_size = int(self.size * self.scale)
+        if self.image:
+            rotated = pygame.transform.rotozoom(self.image, self.rotation, self.scale)
+            rect = rotated.get_rect(center=draw_pos)
+            screen.blit(rotated, rect)
+        else:
+            rect = pygame.Rect(draw_pos.x - scaled_size//2, draw_pos.y - scaled_size//2, scaled_size, scaled_size)
+            pygame.draw.rect(screen, self.color, rect)
+            if self.tween:
+                # Spin indicator
+                spin_end = draw_pos + Vector2(scaled_size//2, 0).rotate(self.rotation)
+                pygame.draw.line(screen, WHITE, draw_pos, spin_end, 3)
+
+class Game:
+    def __init__(self):
+        self.font_large = pygame.font.SysFont('arial', 36)
+        self.font_med = pygame.font.SysFont('arial', 24)
+        self.font_small = pygame.font.SysFont('arial', 18)
+        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        pygame.display.set_caption("Cryptwalk: Popup Dungeon Crawler")
+        self.clock = pygame.time.Clock()
+        self.state = GameState.OVERWORLD
+        
+        # Use user's game structure!
+        self.game_data = {
+            "turn": 1,
+            "combat_log": [],
+            "active_turn": "player",
+            "running": True,
+            "player": Player(),
+            "world": {
+                "depth": 0,
+                "current_room": {
+                    "name": "Crypt Entrance",
+                    "desc": "Cold air spills from a cracked stone doorway. The adventure begins."
+                }
+            },
+            "enemy": None,
         }
-    },
+        self.player = self.game_data["player"]
+        self.player_sprite = JumpSprite(Vector2(100, 300), BLUE, 48)  # Hero blue
+        self.player_hp_bar = Vector2(150, SCREEN_HEIGHT - 100)  # Fixed HUD pos
 
-    "enemy": None,
-}
+        self.current_enemy: Optional[CombatEntity] = None
+        self.enemies: List[CombatEntity] = []
+        self.enemy_sprites: Dict[str, JumpSprite] = {}
+        self.spawn_test_enemy()
 
+        self.popup_alpha = 0
+        self.buttons: List[pygame.Rect] = []
+        self.button_texts = ["ATTACK", "DEFEND", "POISON", "TAUNT"]
+        self.selected_button = -1
+        self.goblin_image = None
 
+        # Room gen words (from cryptwalk.py)
+        self.adjectives = ["Dark", "Forgotten", "Cursed", "Ancient"]
+        self.nouns = ["Crypt", "Tomb", "Gallery"]
 
+    def spawn_test_enemy(self):
+        enemy_type = random.choice(["goblin", "skeleton", "orc"])
+        enemy = create_enemy(enemy_type)
+        pos = Vector2(600 + random.randint(-50, 50), 300 + random.randint(-50, 50))
+        sprite_path = f"assets/{enemy_type}.png"
+        color = GREEN if enemy_type == "goblin" else YELLOW if enemy_type == "skeleton" else RED
+        sprite = JumpSprite(pos, color, 64, sprite_path)
+        self.enemies.append(enemy)
+        self.enemy_sprites[enemy.name] = sprite  # Key by name for now
 
+    def handle_input(self):
+        mouse_pos = pygame.mouse.get_pos()
+        keys = pygame.key.get_pressed()
 
+        if self.state == GameState.OVERWORLD:
+            speed = 4
+            if keys[pygame.K_LEFT] or keys[pygame.K_a]: self.player_sprite.pos.x -= speed
+            if keys[pygame.K_RIGHT] or keys[pygame.K_d]: self.player_sprite.pos.x += speed
+            if keys[pygame.K_UP] or keys[pygame.K_w]: self.player_sprite.pos.y -= speed
+            if keys[pygame.K_DOWN] or keys[pygame.K_s]: self.player_sprite.pos.y += speed
+            if keys[pygame.K_i]: self.state = GameState.INVENTORY_POPUP
+            # Bounds
+            self.player_sprite.pos.x = max(0, min(self.player_sprite.pos.x, SCREEN_WIDTH))
+            self.player_sprite.pos.y = max(0, min(self.player_sprite.pos.y, SCREEN_HEIGHT))
 
+        if keys[pygame.K_ESCAPE]:
+            if self.state != GameState.OVERWORLD:
+                self.state = GameState.OVERWORLD
+                self.popup_alpha = 0
 
-def bar(current, maximum, width=20):
-    filled = int((current / maximum) * width) if maximum > 0 else 0
-    filled = max(0, min(width, filled))
-    return "#" * filled + "_" * (width - filled)
-
-
-def clear_screen():
-    os.system("clear")
-
-
-def render_screen(game, mode="explore"):
-    clear_screen()
-    player = game["player"]
-    room = game["world"]["current_room"]
-
-    print("=" * 50)
-    print(f" {room['name']}".center(50))
-    print("=" * 50)
-    print(f"{room['desc']}".center(50))
-    print()
-
-    if mode == "combat" and game["enemy"]:
-        turn_text = ">>> YOUR TURN <<<" if game["active_turn"] == "player" else "--- ENEMY TURN ---"
-        print(f"{turn_text.center(50)}")
-        print()
-
-    # HUD
-    player = game["player"]
-    p_hp = player.stats["hp"]
-    p_max = player.stats["max_hp"]
-    print(f"HERO : {bar(p_hp, p_max)} {p_hp}/{p_max} HP   Gold: {player.gold}".center(50))
-
-    if mode == "combat" and game["enemy"]:
-        e = game["enemy"]
-        e_hp = e.stats["hp"]
-        e_max = e.stats["max_hp"]
-        print(f"ENEMY: {bar(e_hp, e_max)} {e_hp}/{e_max} HP ({e.name})".center(50))
-
-    print("-" * 50)
-
-    # Recent events
-    log = game["combat_log"]
-    if log:
-        print("Recent events:".center(50))
-        for line in log[-3:]:
-            print(f"  • {line}".center(50))
-    print("=" * 50)
-
-    if mode == "combat":
-        print("Actions:".center(50))
-        print("  1) Attack    2) Defend".center(50))
-        print("  3) Poison    4) Taunt".center(50))
-        print("-" * 50)
-
-
-def player_turn(game):
-    while True:
-        choice = input("\nChoose action (1-4): ").strip()
-        if choice == "1":
-            attack(game, "player", "enemy")
-            return
-        elif choice == "2":
-            apply_defend(game["player"])
-            game["combat_log"].append("You brace for impact!")
-            return
-        elif choice == "3":
-            apply_poison(game["enemy"], dmg_per_turn=1, turns=3)
-            game["combat_log"].append("You poison the enemy!")
-            return
-        elif choice == "4":
-            apply_taunt(game["player"], dmg_reduction=-2, turns=1)  # taunt self? Wait — actually you want enemy to taunt player?
-            game["combat_log"].append("You taunt the enemy — it enrages and strikes harder? Wait, logic flip!")
-            return
-        else:
-            print("Invalid choice. Enter 1, 2, 3, or 4.")
-
-
-def enemy_turn(game):
-    attack(game, "enemy", "player")
-    game["combat_log"].append(f"{game['enemy'].name} attacks!")
-
-
-def run_combat(game):
-    pygame.init()
-    SCREEN_WIDTH = 800
-    SCREEN_HEIGHT = 600
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Cryptwalk Battle")
-    clock = pygame.time.Clock()
-    
-    BLACK = (0, 0, 0)
-    WHITE = (255, 255, 255)
-    RED = (255, 0, 0)
-    GREEN = (0, 255, 0)
-    
-    font = pygame.font.SysFont("arial", 40)
-    
-    # Remove blocking input—show message in GUI instead
-    start_text = font.render("Press any key to begin combat...", True, WHITE)
-    screen.blit(start_text, (SCREEN_WIDTH // 2 - start_text.get_width() // 2, SCREEN_HEIGHT // 2))
-    pygame.display.flip()
-    waiting = True
-    while waiting:
+        # Click buttons in popups
         for event in pygame.event.get():
-            if event.type == QUIT:
-                pygame.quit()
-                return
-            if event.type == KEYDOWN:
-                waiting = False
-        clock.tick(30)
-    
-    depth = game["world"]["depth"]
-    scale = 1 + depth * .1
-    game["enemy"] = CombatEntity("Goblin", 20, 20, 6, 2)
-    game["combat_log"].clear()
-    game["turn"] = 1
-    game["active_turn"] = "player"
-    
-    action_chosen = False  # For player input state
-    selected_action = None
-    
-    running = True
-    while running and game["player"].is_alive() and game["enemy"] and game["enemy"].stats["hp"] > 0:
-        for event in pygame.event.get():
-            if event.type == QUIT:
-                running = False
-                game["running"] = False
-            if event.type == KEYDOWN and game["active_turn"] == "player" and not action_chosen:
-                if event.key == K_1:
-                    selected_action = "attack"
-                elif event.key == K_2:
-                    selected_action = "defend"
-                elif event.key == K_3:
-                    selected_action = "poison"
-                elif event.key == K_4:
-                    selected_action = "taunt"
-                if selected_action:
-                    action_chosen = True
-        
-        # Logic (non-blocking)
-        process_effects(game, "player")
-        process_effects(game, "enemy")
-        
-        if game["enemy"].stats["hp"] <= 0 or not game["player"].is_alive():
-            break
-        
-        if game["active_turn"] == "player" and action_chosen:
-            # Execute selected action (from player_turn logic)
-            if selected_action == "attack":
-                attack(game, "player", "enemy")
-            elif selected_action == "defend":
-                apply_defend(game["player"])
-            elif selected_action == "poison":
-                apply_poison(game["enemy"])  # Adjust params
-            elif selected_action == "taunt":
-                apply_taunt(game["player"])  # Adjust
-            action_chosen = False
-            selected_action = None
-            game["active_turn"] = "enemy"
-        
-        if game["active_turn"] == "enemy":
-            enemy_turn(game)
-            game["active_turn"] = "player"
-        
-        game["turn"] += 1
-        
-        # Draw GUI
-        screen.fill(BLACK)
-        # Enemy name/HP bar (as before)
-        name_text = font.render(game["enemy"].name, True, WHITE)
-        screen.blit(name_text, (SCREEN_WIDTH // 2 - name_text.get_width() // 2, 80))
-        
-        hp_bar_width = 400
-        hp_bar_height = 40
-        hp_ratio = game["enemy"].stats["hp"] / game["enemy"].stats["max_hp"]
-        pygame.draw.rect(screen, RED, (SCREEN_WIDTH // 2 - hp_bar_width // 2, 480, hp_bar_width, hp_bar_height))
-        pygame.draw.rect(screen, GREEN, (SCREEN_WIDTH // 2 - hp_bar_width // 2, 480, hp_bar_width * hp_ratio, hp_bar_height))
-        
-        hp_text = font.render(f"HP: {game['enemy'].stats['hp']}/{game['enemy'].stats['max_hp']}", True, WHITE)
-        screen.blit(hp_text, (SCREEN_WIDTH // 2 - hp_text.get_width() // 2, 530))
-        
-        # Actions menu in GUI
-        actions_text = font.render("1) Attack  2) Defend  3) Poison  4) Taunt", True, WHITE)
-        screen.blit(actions_text, (50, SCREEN_HEIGHT - 50))
-        
-        pygame.display.flip()
-        clock.tick(30)
-    
-    # Victory (non-blocking)
-    if game["player"].is_alive():
-        game["combat_log"].append("Goblin defeated!")
-        game["player"].gold += 10
-        # ... loot logic ...
-        victory_text = font.render("Victory! Press Enter in console...", True, WHITE)
-        screen.blit(victory_text, (SCREEN_WIDTH // 2 - victory_text.get_width() // 2, SCREEN_HEIGHT // 2))
-        pygame.display.flip()
-        input("\nVictory! Press Enter...")  # OK here, after loop
-    else:
-        # Defeat
-        input("\nYou have been defeated...")
-    
-    game["enemy"] = None
-    pygame.quit()
+            if event.type == pygame.QUIT:
+                self.game_data["running"] = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if self.state == GameState.COMBAT_POPUP:
+                    for i, btn in enumerate(self.buttons):
+                        if btn.collidepoint(mouse_pos):
+                            self.handle_combat_action(i)
+                            return
 
-    
-def roll_encounter():
-    return random() < 0.5
+    def handle_combat_action(self, action_idx: int):
+        # Use a stable 'enemy' key inside game_data for combat operations
+        enemy_key = "enemy"
+        player_key = "player"
+        if self.current_enemy:
+            self.game_data["enemy"] = self.current_enemy
 
+        if action_idx == 0:  # Attack
+            attack(self.game_data, player_key, enemy_key)
+        elif action_idx == 1:  # Defend
+            apply_defend(self.player)
+            self.game_data["combat_log"].append("You brace for impact!")
+        elif action_idx == 2:  # Poison
+            apply_poison(self.current_enemy, dmg_per_turn=2, turns=3, game=self.game_data)
+        elif action_idx == 3:  # Taunt (self for demo)
+            apply_taunt(self.player, dmg_reduction=-3, turns=1, game=self.game_data)
 
+        # Process effects
+        process_effects(self.game_data, player_key)
+        if self.current_enemy and is_alive(self.current_enemy):
+            process_effects(self.game_data, enemy_key)
 
-def move_forward(game):
-    # Increase depth — this is your "progress"
-    game["world"]["depth"] += 1
-    depth = game["world"]["depth"]
+        # Enemy turn if alive
+        if self.current_enemy and is_alive(self.current_enemy):
+            attack(self.game_data, enemy_key, player_key)
 
-    # Procedural room generation
-    adjectives = ["Echoing", "Moldy", "Bone-Lined", "Spider-Infested", "Blood-Stained",
-                  "Collapsed", "Flickering", "Silent", "Damp", "Forgotten"]
-    nouns = ["Chamber", "Hall", "Vault", "Passage", "Crypt", "Tomb", "Gallery"]
+        # Check win/lose
+        if not self.current_enemy or not is_alive(self.current_enemy):
+            self.game_data["combat_log"].append("Enemy defeated!")
+            self.state = GameState.OVERWORLD
+            self.current_enemy = None
+            self.game_data["enemy"] = None
+        elif not is_alive(self.player):
+            self.game_data["combat_log"].append("You died!")
+            self.state = GameState.OVERWORLD
 
-    adj = choice(adjectives)
-    nouns = choice(nouns)
-    room_name = f"The {adj} {nouns}"
+    def update(self):
+        self.player_sprite.update()
+        for sprite in self.enemy_sprites.values():
+            sprite.update()
 
-    descriptions = [
-        "The air tastes old and stale.",
-        "Water drips from cracks overhead.",
-        "Bones crunch beneath your boots.",
-        "Cobwebs drape everything like funeral curtains.",
-        "Faint scratching echoes from the walls.",
-        "Torchlight reveals ancient carvings.",
-        "A cold wind blows from deeper within.",
-        "The floor is slick with moisture."
-    ]
-    room_desc = choice(descriptions)
+        # Collision -> Jump to combat
+        if self.state == GameState.OVERWORLD:
+            for enemy in self.enemies:
+                sprite = self.enemy_sprites.get(enemy.name)
+                if sprite and self.player_sprite.pos.distance_to(sprite.pos) < 60:
+                    self.current_enemy = enemy
+                    # also set the active enemy in the game data for combat functions
+                    self.game_data["enemy"] = enemy
+                    # JUMP enemy to arena!
+                    arena_pos = Vector2(SCREEN_WIDTH - 200, SCREEN_HEIGHT // 2)
+                    sprite.start_jump(arena_pos, 45)
+                    # Player jumps to left arena
+                    self.player_sprite.start_jump(Vector2(200, SCREEN_HEIGHT // 2), 45)
+                    self.state = GameState.COMBAT_POPUP
+                    self.popup_alpha = 0
+                    break
 
-    # Update current room
-    game["world"]["current_room"] = {
-        "name": room_name,
-        "desc": room_desc
-    }
+        if self.state != GameState.OVERWORLD:
+            self.popup_alpha = min(255, self.popup_alpha + 8)
 
-    # Show the new room
-    print(f"\nYou descend deeper... (Depth {depth})")
-    print(f"You enter: {room_name}")
-    print(room_desc)
+    def draw_overworld(self):
+        self.screen.fill(DARK_GRAY)
+        # Room walls
+        pygame.draw.rect(self.screen, BLACK, (0, 0, SCREEN_WIDTH, 80))
+        pygame.draw.rect(self.screen, BLACK, (0, SCREEN_HEIGHT - 80, SCREEN_WIDTH, 80))
+        # Depth label
+        depth_text = self.font_med.render(f"Depth: {self.game_data['world']['depth']}", True, WHITE)
+        self.screen.blit(depth_text, (10, 10))
 
-    # Higher chance of encounter the deeper you go (optional scaling)
-    encounter_chance = min(0.8, 0.4 + depth * 0.05)  # starts ~40%, maxes at 80%
+        # Player & enemies
+        self.player_sprite.draw(self.screen)
+        for enemy in self.enemies:
+            sprite = self.enemy_sprites.get(enemy.name)
+            if sprite:
+                sprite.draw(self.screen)
+                # Mini HP
+                hp_ratio = enemy.stats["hp"] / enemy.stats["max_hp"]
+                bar_w = 40
+                pygame.draw.rect(self.screen, RED, (sprite.pos.x - 20, sprite.pos.y - 50, bar_w, 4))
+                pygame.draw.rect(self.screen, GREEN, (sprite.pos.x - 20, sprite.pos.y - 50, bar_w * hp_ratio, 4))
 
-    if random() < encounter_chance:
-        print("\nSomething stirs in the shadows...")
-        input("Press Enter to fight...")
-        run_combat(game)
-    else:
-        print("\n...The room is empty. For now.")
+        # Player HUD (fixed)
+        p_hp_ratio = self.player.stats["hp"] / self.player.stats["max_hp"]
+        pygame.draw.rect(self.screen, RED, (self.player_hp_bar.x, self.player_hp_bar.y, 200, 20))
+        pygame.draw.rect(self.screen, GREEN, (self.player_hp_bar.x, self.player_hp_bar.y, 200 * p_hp_ratio, 20))
+        hp_text = self.font_small.render(f"HP: {int(self.player.stats['hp'])}/{self.player.stats['max_hp']}", True, WHITE)
+        self.screen.blit(hp_text, (self.player_hp_bar.x, self.player_hp_bar.y + 25))
 
-def rest(game):
-    heal = 8
-    before = game["player"].stats["hp"]
-    game["player"].stats["hp"] = min(game["player"].stats["max_hp"], before + heal)
-    gained = game["player"].stats["hp"] - before
-    print(f"\nYou rest and recover {gained} HP.")
+    def draw_popup_overlay(self):
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT)).convert_alpha()
+        overlay.fill((0, 0, 0, self.popup_alpha // 3))
+        self.screen.blit(overlay, (0, 0))
 
+    def draw_combat_popup(self):
+        # Lazy-load goblin sprite (safe: attribute set in __init__)
+        if getattr(self, "goblin_image", None) is None:
+            try:
+                self.goblin_image = pygame.image.load('assets/goblin.png')
+                self.goblin_image = pygame.transform.scale(self.goblin_image, (200, 200))
+            except Exception as e:
+                print(f"Sprite load error: {e} - Check assets/goblin.png")
+                self.goblin_image = None  # Fallback
 
-def use_inventory(game):
-    inv = game["player"].inventory
-    if not inv:
-        print("\nYour inventory is empty.")
-        input("Press Enter...")
-        return
+        popup_rect = pygame.Rect(100, 100, SCREEN_WIDTH - 200, SCREEN_HEIGHT - 200)
+        pygame.draw.rect(self.screen, DARK_GRAY, popup_rect)
+        pygame.draw.rect(self.screen, WHITE, popup_rect, 5)
 
-    print("\nInventory:")
-    for i, item in enumerate(inv):
-        equipped = ""
-        if item is game["player"].weapon:
-            equipped = " (equipped weapon)"
-        elif item is game["player"].armor:
-            equipped = " (equipped armor)"
-        print(f"{i+1}) {item.name} ({item.type}{equipped})")
-
-    choice = input("\nUse/equip item number (or Enter to cancel): ").strip()
-    if not choice.isdigit():
-        return
-
-    idx = int(choice) - 1
-    if not (0 <= idx < len(inv)):
-        print("Invalid number.")
-        input("Press Enter...")
-        return
-
-    item = inv[idx]
-
-    if item.type == "potion":
-        healed = game["player"].stats["hp"]
-        game["player"].stats["hp"] = min(game["player"].stats["max_hp"], game["player"].stats["hp"] + item.value)
-        healed = game["player"].stats["hp"] - healed
-        print(f"\nYou drink {item.name} and recover {healed} HP!")
-        inv.remove(item)  # consume potion
-    elif item.type == "weapon":
-        if game["player"].weapon == item:
-            print(f"{item.name} is already equipped.")
+        # Draw sprite if loaded
+        if self.goblin_image:
+            self.screen.blit(self.goblin_image, (popup_rect.centerx - 100, popup_rect.y + 50))
         else:
-            game["player"].weapon = item
-            game["player"].stats["strength"] += item.value
-            print(f"\nYou equip {item.name} (+{item.value} strength)!")
-    elif item.type == "armor":
-        if game["player"].armor == item:
-            print(f"{item.name} is already equipped.")
+            no_img_text = self.font_med.render("No sprite loaded", True, RED)
+            self.screen.blit(no_img_text, (popup_rect.centerx - no_img_text.get_width()//2, popup_rect.y + 50))
+
+        # Enemy name (prefer active enemy)
+        enemy = self.game_data.get("enemy") or self.current_enemy
+        enemy_name = enemy.name if enemy else "Enemy"
+        title = self.font_large.render(enemy_name, True, WHITE)
+        self.screen.blit(title, (popup_rect.centerx - title.get_width()//2, popup_rect.y + 10))
+
+        # HP bar (if enemy present)
+        if enemy:
+            hp_bar_width = 400
+            hp_bar_height = 40
+            hp_ratio = enemy.stats["hp"] / enemy.stats["max_hp"]
+            hp_bar_x = popup_rect.centerx - hp_bar_width // 2
+            hp_bar_y = popup_rect.bottom - 100
+            pygame.draw.rect(self.screen, RED, (hp_bar_x, hp_bar_y, hp_bar_width, hp_bar_height))
+            pygame.draw.rect(self.screen, GREEN, (hp_bar_x, hp_bar_y, hp_bar_width * hp_ratio, hp_bar_height))
+
+            hp_text = self.font_med.render(f"HP: {enemy.stats['hp']}/{enemy.stats['max_hp']}", True, WHITE)
+            self.screen.blit(hp_text, (hp_bar_x, hp_bar_y + hp_bar_height + 10))
+
+        # Action menu (bottom)
+        actions = self.font_med.render("1) Attack 2) Defend 3) Poison 4) Taunt", True, WHITE)
+        self.screen.blit(actions, (popup_rect.x + 20, popup_rect.bottom - 50))
+
+    def draw_inventory_popup(self):
+        # Simple inv popup (expand later)
+        inv_rect = pygame.Rect(200, 150, 400, 300)
+        pygame.draw.rect(self.screen, WHITE, inv_rect, 5)
+        title = self.font_large.render("INVENTORY", True, WHITE)
+        self.screen.blit(title, (inv_rect.centerx - title.get_width()//2, 170))
+
+        # List items (placeholder)
+        y_off = 220
+        for i, item in enumerate(self.player.inventory):
+            item_text = self.font_med.render(f"{item.name} (+{item.value})", True, WHITE)
+            self.screen.blit(item_text, (220, y_off + i * 35))
+
+    def draw(self):
+        if self.state == GameState.OVERWORLD:
+            self.draw_overworld()
         else:
-            game["player"].armor = item
-            game["player"].stats["defense"] += item.value
-            print(f"\nYou equip {item.name} (+{item.value} defense)!")
-    else:
-        print("Can't use that item.")
+            self.draw_overworld()  # Dim background
+            self.draw_popup_overlay()
+            if self.state == GameState.COMBAT_POPUP:
+                self.draw_combat_popup()
+            elif self.state == GameState.INVENTORY_POPUP:
+                self.draw_inventory_popup()
 
-    input("Press Enter...")
-
-
-def main():
-    print("Welcome to Cryptwalk")
-    input("Press Enter to begin your descent...")
-
-    # Give starting item for testing
-    game["player"].inventory.append(healing_potion)
-    while game["running"] and game["player"].is_alive():
-        render_screen(game, mode="explore")
-
-        print("\nWhat do you do?")
-        print("1) Move forward")
-        print("2) Rest (+8 HP)")
-        print("3) Inventory")
-        print("4) Status")
-        print("5) Quit")
-
-        choice = input("\n> ").strip()
-
-        if choice == "1":
-            move_forward(game)
-        elif choice == "2":
-            rest(game)
-        elif choice == "3":
-            use_inventory(game)
-        elif choice == "4":
-            render_screen(game, mode="explore")
-            input("\nPress Enter to continue...")
-        elif choice == "5":
-            print("\nYou escape the crypt alive...")
-            game["running"] = False
-
-    if not game["player"].is_alive():
-        print("\nGame Over")
+    def run(self):
+        running = True
+        while running and self.game_data["running"]:
+            self.handle_input()
+            self.update()
+            self.draw()
+            pygame.display.flip()
+            self.clock.tick(FPS)
+        pygame.quit()
+        sys.exit()
 
 if __name__ == "__main__":
-    main()
+    game = Game()
+    game.run()
