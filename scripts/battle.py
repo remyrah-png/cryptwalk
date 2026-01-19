@@ -51,6 +51,7 @@ while running:
 
     screen.fill(BLACK)
     screen.blit(enemy_image, enemy_rect)
+    screen.blit(player_image, player_rect)
 
     font = pygame.font.SysFont("arial", 40)
     name_text = font.render(enemy_name, True, WHITE)
