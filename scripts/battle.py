@@ -18,10 +18,16 @@ WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 
-enemy_type = game["enemy"]  # Change to "skeleton" or "orc"
+# Enemy load
+enemy = game["enemy"]
+if enemy:
+    enemy_type = enemy.name.lower()  # Get string from object
+else:
+    enemy_type = "goblin"  # Fallback
+    enemy = create_enemy(enemy_type)
 
-# Enemy load (use "Sequences" for enemies, correct frame name)
 enemy_image = pygame.image.load(f"assets/{enemy_type.capitalize()}/PNG/PNG Sequences/Idle/Idle_001.png")
+# ... rest samele as player_image
 enemy_image = pygame.transform.scale(enemy_image, (300, 300))
 enemy_rect = enemy_image.get_rect()
 enemy_rect.center = (SCREEN_WIDTH // 2 + 200, SCREEN_HEIGHT // 2 - 50)  # Right side
