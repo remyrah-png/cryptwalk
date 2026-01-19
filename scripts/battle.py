@@ -37,9 +37,9 @@ enemy_max_hp = enemy.stats["max_hp"]
 
 # Player load
 player_image = pygame.image.load("assets/Hero/PNG/PNG Sequence/Idle/Idle_001.png")
-player_image = pygame.transform.scale(player_image, (320, 320))
+player_image = pygame.transform.scale(player_image, (200, 200))
 player_rect = player_image.get_rect()
-player_rect.center = (SCREEN_WIDTH // 2 - 250, SCREEN_HEIGHT // 2 - 50)  # Left side
+player_rect.center = (SCREEN_WIDTH // 2 - 250, SCREEN_HEIGHT // 2 + 50)  # Left side
 
 player = game["player"]
 player_name = player.name
