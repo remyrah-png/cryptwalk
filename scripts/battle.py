@@ -1,6 +1,6 @@
 import sys
 sys.path.append("..")  # Adjust the path as necessary to import from parent directory
-
+from cryptwalk import game  # Add player object from cryptwalk
 import pygame
 from enemies import create_enemy
 
@@ -29,6 +29,19 @@ enemy = create_enemy(enemy_type)
 enemy_name = enemy.name
 enemy_hp = enemy.stats["hp"]
 enemy_max_hp = enemy.stats["max_hp"]
+
+
+
+player_type = "hero"  # Or use from game state
+player_image = pygame.image.load(f"assets/Hero/PNG/PNG Sequence/Idle/Idle_001.png")  # Start with first idle frame
+player_image = pygame.transform.scale(player_image, (300, 300))
+player_rect = player_image.get_rect()
+player_rect.center = (SCREEN_WIDTH // 4, SCREEN_HEIGHT // 2 - 50)  # Left side
+
+player = game["player"]  # From cryptwalk.py
+player_name = player.name
+player_hp = player.stats["hp"]
+player_max_hp = player.stats["max_hp"]
 
 running = True
 while running:
