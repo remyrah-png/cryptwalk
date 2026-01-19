@@ -16,7 +16,7 @@ animations = {
     'Walk': {'file': 'Walk.png', 'frame_count': 6, 'frame_width': 128, 'frame_height': 96}
 }
 
-base_path = 'assets/Hero/PNG/PNG Sequences/'
+base_path = 'assets/Hero/PNG/PNG Sequence/'
 
 for anim, info in animations.items():
     anim_path = os.path.join(base_path, anim)
