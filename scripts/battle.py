@@ -59,10 +59,14 @@ while running:
 
     hp_bar_width = 400
     hp_bar_height = 40
-    hp_ratio = enemy_hp / enemy_max_hp if enemy_max_hp > 0 else 0
+
+    hp_ratio = {
+        "enemy": enemy_hp / enemy_max_hp if enemy_max_hp > 0 else 0,
+        "player": player_hp / player_max_hp if player_max_hp > 0 else 0
+    }
     pygame.draw.rect(screen, RED, (SCREEN_WIDTH // 2 - hp_bar_width // 2, 480, hp_bar_width, hp_bar_height))
-    pygame.draw.rect(screen, GREEN, (SCREEN_WIDTH // 2 - hp_bar_width // 2, 480, hp_bar_width * hp_ratio, hp_bar_height))
-    
+    pygame.draw.rect(screen, GREEN, (SCREEN_WIDTH // 2 - hp_bar_width // 2, 480, hp_bar_width * hp_ratio["enemy"], hp_bar_height))
+
     hp_text = font.render(f"HP: {enemy_hp}/{enemy_max_hp}", True, WHITE)
     screen.blit(hp_text, (SCREEN_WIDTH // 2 - hp_text.get_width() // 2, 530))
 
