@@ -1,4 +1,3 @@
-import os
 import sys
 sys.path.append("..")  # Adjust as necessary
 from cryptwalk import game  # Import game dict
@@ -21,23 +20,21 @@ GREEN = (0, 255, 0)
 # Enemy load
 enemy = game["enemy"]
 if enemy:
-    enemy_type = enemy.name.lower()  # Get string from object
+    enemy_type = enemy.name.lower()  # e.g., "goblin"
 else:
     enemy_type = "goblin"  # Fallback
     enemy = create_enemy(enemy_type)
 
 enemy_image = pygame.image.load(f"assets/{enemy_type.capitalize()}/PNG/PNG Sequences/Idle/Idle_001.png")
-# ... rest samele as player_image
 enemy_image = pygame.transform.scale(enemy_image, (300, 300))
 enemy_rect = enemy_image.get_rect()
 enemy_rect.center = (SCREEN_WIDTH // 2 + 200, SCREEN_HEIGHT // 2 - 50)  # Right side
 
-enemy = create_enemy(enemy_type)
 enemy_name = enemy.name
 enemy_hp = enemy.stats["hp"]
 enemy_max_hp = enemy.stats["max_hp"]
 
-# Player load (use "Sequence" for Hero, correct frame name)
+# Player load
 player_image = pygame.image.load("assets/Hero/PNG/PNG Sequence/Idle/Idle_001.png")
 player_image = pygame.transform.scale(player_image, (300, 300))
 player_rect = player_image.get_rect()
