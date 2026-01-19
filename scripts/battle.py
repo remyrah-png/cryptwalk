@@ -19,8 +19,8 @@ GREEN = (0, 255, 0)
 
 enemy_type = "goblin"  # Change to "skeleton" or "orc"
 
-# Enemy load (use "Sequences" for enemies)
-enemy_image = pygame.image.load(f"assets/{enemy_type.capitalize()}/PNG/PNG Sequences/Idle/{enemy_type.capitalize()}_001.png")
+# Enemy load (use "Sequences" for enemies, correct frame name)
+enemy_image = pygame.image.load(f"assets/{enemy_type.capitalize()}/PNG/PNG Sequences/Idle/Idle_001.png")
 enemy_image = pygame.transform.scale(enemy_image, (300, 300))
 enemy_rect = enemy_image.get_rect()
 enemy_rect.center = (SCREEN_WIDTH // 2 + 200, SCREEN_HEIGHT // 2 - 50)  # Right side
@@ -30,7 +30,7 @@ enemy_name = enemy.name
 enemy_hp = enemy.stats["hp"]
 enemy_max_hp = enemy.stats["max_hp"]
 
-# Player load (use "Sequence" for Hero, adjust if needed)
+# Player load (use "Sequence" for Hero, correct frame name)
 player_image = pygame.image.load("assets/Hero/PNG/PNG Sequence/Idle/Idle_001.png")
 player_image = pygame.transform.scale(player_image, (300, 300))
 player_rect = player_image.get_rect()
