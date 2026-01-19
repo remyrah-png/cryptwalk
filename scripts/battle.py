@@ -29,7 +29,7 @@ enemy_image = pygame.image.load(f"assets/{enemy_type.capitalize()}/PNG/PNG Seque
 enemy_image = pygame.transform.scale(enemy_image, (200, 200))
 enemy_image = pygame.transform.flip(enemy_image, True, False)  # Face left
 enemy_rect = enemy_image.get_rect()
-enemy_rect.center = (SCREEN_WIDTH // 550, SCREEN_HEIGHT // 2)  # Right side
+enemy_rect.center = (SCREEN_WIDTH // 2 + 250, SCREEN_HEIGHT // 2 + 50)  # Right side
 
 enemy_name = enemy.name
 enemy_hp = enemy.stats["hp"]
@@ -39,7 +39,7 @@ enemy_max_hp = enemy.stats["max_hp"]
 player_image = pygame.image.load("assets/Hero/PNG/PNG Sequence/Idle/Idle_001.png")
 player_image = pygame.transform.scale(player_image, (320, 320))
 player_rect = player_image.get_rect()
-player_rect.center = (SCREEN_WIDTH // 250, SCREEN_HEIGHT // 2 - 50)  # Left side
+player_rect.center = (SCREEN_WIDTH // 2 - 250, SCREEN_HEIGHT // 2 - 50)  # Left side
 
 player = game["player"]
 player_name = player.name
