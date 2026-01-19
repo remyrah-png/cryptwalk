@@ -4,16 +4,16 @@ print("Current dir:", os.getcwd())
 
 # Config: Adjust based on your sprites (from Walk.png: 6 frames, ~128x96 each? Measure one frame width/height)
 animations = {
-    'Attack_1': {'file': 'Attack_1/Attack_1.png', 'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
-    'Attack_2': {'file': 'Attack_2/Attack_2.png', 'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
-    'Attack_3': {'file': 'Attack_3/Attack_3.png', 'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
-    'Dead': {'file': 'Dead/Dead.png', 'frame_count': 5, 'frame_width': 128, 'frame_height': 96},
-    'Hurt': {'file': 'Hurt/Hurt.png', 'frame_count': 2, 'frame_width': 128, 'frame_height': 96},
-    'Idle': {'file': 'Idle/Idle.png', 'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
-    'Jump': {'file': 'Jump/Jump.png', 'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
-    'Run': {'file': 'Run/Run.png', 'frame_count': 6, 'frame_width': 128, 'frame_height': 96},
-    'Run+Attack': {'file': 'Run+Attack/Run+Attack.png', 'frame_count': 6, 'frame_width': 128, 'frame_height': 96},
-    'Walk': {'file': 'Walk/Walk.png', 'frame_count': 6, 'frame_width': 128, 'frame_height': 96}
+    'Attack_1': {'file': 'Attack_1.png', 'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
+    'Attack_2': {'file': 'Attack_2.png', 'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
+    'Attack_3': {'file': 'Attack_3.png', 'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
+    'Dead': {'file': 'Dead.png', 'frame_count': 5, 'frame_width': 128, 'frame_height': 96},
+    'Hurt': {'file': 'Hurt.png', 'frame_count': 2, 'frame_width': 128, 'frame_height': 96},
+    'Idle': {'file': 'Idle.png', 'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
+    'Jump': {'file': 'Jump.png', 'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
+    'Run': {'file': 'Run.png', 'frame_count': 6, 'frame_width': 128, 'frame_height': 96},
+    'RunAttack': {'file': 'RunAttack.png', 'frame_count': 6, 'frame_width': 128, 'frame_height': 96},
+    'Walk': {'file': 'Walk.png', 'frame_count': 6, 'frame_width': 128, 'frame_height': 96}
 }
 
 base_path = 'assets/Hero/PNG/PNG Sequences/'
