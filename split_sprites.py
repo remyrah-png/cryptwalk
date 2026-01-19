@@ -1,5 +1,6 @@
 from PIL import Image
 import os
+print("Current dir:", os.getcwd())
 
 # Config: Adjust based on your sprites (from Walk.png: 6 frames, ~128x96 each? Measure one frame width/height)
 animations = {
@@ -20,6 +21,10 @@ base_path = 'assets/Hero/PNG/PNG Sequences/'
 for anim, info in animations.items():
     anim_path = os.path.join(base_path, anim)
     os.makedirs(anim_path, exist_ok=True)  # Create subfolder if needed
+    full_path = os.path.join(base_path, info['file'])
+    print("Trying to open:", full_path)
+    if not os.path.exists(full_path):
+        print("File missing! Check path/case.")
     sheet = Image.open(os.path.join(base_path, info['file']))
     
     for i in range(info['frame_count']):
