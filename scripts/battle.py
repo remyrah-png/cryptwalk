@@ -19,7 +19,7 @@ GREEN = (0, 255, 0)
 
 enemy_type = "goblin"  # Change to "skeleton" or "orc" to test!
 
-enemy_image = pygame.image.load(f"assets/{enemy_type}.png")
+enemy_image = pygame.image.load(f"assets/{enemy_type.capitalize()}/PNG/PNG Sequences/Idle/{enemy_type.capitalize()}_001.png")  # First idle frame
 enemy_image = pygame.transform.scale(enemy_image, (300, 300))
 
 enemy_rect = enemy_image.get_rect()
