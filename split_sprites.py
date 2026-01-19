@@ -31,7 +31,6 @@ for anim, info in animations.items():
         frame = sheet.crop((i * info['frame_width'], 0, (i + 1) * info['frame_width'], info['frame_height']))
         frame.save(os.path.join(anim_path, f'{anim}_{i+1:03d}.png'))  # e.g., Walk_001.png
 
-    # Optional: Delete original sheet after split
-    # os.remove(os.path.join(base_path, info['file']))
+        
 
 print("Splitting done!")
