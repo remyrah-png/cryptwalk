@@ -17,7 +17,7 @@ WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 
-enemy_type = "goblin"  # Change to "skeleton" or "orc"
+enemy_type = game["enemy"]  # Change to "skeleton" or "orc"
 
 # Enemy load (use "Sequences" for enemies, correct frame name)
 enemy_image = pygame.image.load(f"assets/{enemy_type.capitalize()}/PNG/PNG Sequences/Idle/Idle_001.png")
