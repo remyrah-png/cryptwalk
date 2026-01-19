@@ -1,3 +1,4 @@
+
 # cryptwalk.py - Main game file
 import os
 import random
