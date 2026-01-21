@@ -17,24 +17,18 @@ def calculate_damage(attacker, defender):
 
         
 def apply_defend(entity):
-    entity.defending = True
+    entity.defending = True  # No log here; add in caller
 
-def apply_poison(target, dmg_per_turn=1, turns=3):
-    target.effects.append({
-        "type": "poison",
-        "dmg": dmg_per_turn,
-        "turns": turns
-    })
-    game["combat_log"].append(f"{target.name} is poisoned for {turns} turns!")
+def apply_poison(game, target, dmg_per_turn=1, turns=3):
+    target.effects.append({"type": "poison", "dmg": dmg_per_turn, "turns": turns})
+    game["combat_log"].append(f"{target.name} is poisoned ({dmg_per_turn} dmg/turn for {turns} turns)!")
 
-def apply_taunt(attacker, dmg_reduction=-2, turns=1):
-    attacker.effects.append({
-        "type": "taunt",
-        "dmg": dmg_reduction,  # negative
-        "turns": turns
-    })
-    game["combat_log"].append(f"{attacker.name} is taunted for {turns} turns!")
+def apply_enrage(game, target, dmg_bonus=3, turns=2):  # Buffs enemy attack
+    target.effects.append({"type": "enrage", "dmg": dmg_bonus, "turns": turns})
+    game["combat_log"].append(f"{target.name} is enraged (+{dmg_bonus} dmg for {turns} turns)!")
 
+
+    game["combat_log"].append(f"{attacker.name} is enraged for {turns} turns!")
 def attack(game, attacker_key, defender_key, bonus_damage=0):
     attacker = game[attacker_key]
     defender = game[defender_key]
@@ -45,15 +39,17 @@ def attack(game, attacker_key, defender_key, bonus_damage=0):
         bonus_damage = attacker.weapon.value
     dmg = base_dmg + bonus_damage
 
-    # Apply taunt effect (reduces attacker's damage)
+#Update attack() to handle "enrage":
+# Add after taunt check (around line ~35):
     for i, eff in enumerate(attacker.effects[:]):
-        if eff["type"] == "taunt" and eff["turns"] > 0:
-            dmg = max(1, dmg + eff["dmg"])  # dmg is negative
-            game["combat_log"].append(f"{attacker.name} is taunted! Damage reduced!")
+        if eff["type"] == "enrage" and eff["turns"] > 0:
+            dmg += eff["dmg"]
+            game["combat_log"].append(f"{attacker.name} is enraged! Extra damage!")
             eff["turns"] -= 1
             if eff["turns"] <= 0:
                 attacker.effects.pop(i)
             break
+    
 
     # Defending reduces damage
     if getattr(defender, "defending", False):
