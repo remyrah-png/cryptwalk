@@ -49,9 +49,23 @@ player_max_hp = player.stats["max_hp"]
 running = True
 while running:
     for event in pygame.event.get():
-        if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+        if event.type == pygame.QUIT:
             running = False
-
+        elif event.type == pygame.KEYDOWN and player_turn:
+            if event.key == pygame.K_a:  # 'A' for Attack
+                damage = random.randint(5, 10)  # Example: 5-10 damage
+                goblin_hp -= damage
+                if goblin_hp < 0:
+                    goblin_hp = 0
+                player_turn = False  # Switch to enemy turn
+        # Enemy turn logic (simple AI)
+    if not player_turn and goblin_hp > 0:
+        damage = random.randint(3, 8)
+        hero_hp -= damage
+        if hero_hp < 0:
+            hero_hp = 0
+        player_turn = True  # Back to player
+        
     screen.fill(BLACK)
     screen.blit(enemy_image, enemy_rect)
     screen.blit(player_image, player_rect)
@@ -77,6 +91,16 @@ while running:
     pygame.draw.rect(screen, GREEN, (SCREEN_WIDTH // 4 - hp_bar_width // 2, 480, hp_bar_width * player_hp_ratio, hp_bar_height))
     hp_text = font.render(f"HP: {player_hp}/{player_max_hp}", True, WHITE)
     screen.blit(hp_text, (SCREEN_WIDTH // 4 - hp_text.get_width() // 2, 530))
+
+    # Check win/lose
+    if hero_hp <= 0:
+        lose_text = font.render("Game Over", True, (255, 0, 0))
+        screen.blit(lose_text, (screen_width // 2 - 100, screen_height // 2))
+        running = False  # Or handle restart
+    elif goblin_hp <= 0:
+        win_text = font.render("You Win!", True, (0, 255, 0))
+        screen.blit(win_text, (screen_width // 2 - 100, screen_height // 2))
+        running = False
 
     pygame.display.flip()
     clock.tick(60)
