@@ -2,7 +2,9 @@ import sys
 sys.path.append("..")  # Adjust as necessary
 from cryptwalk import game  # Import game dict
 import pygame
+import random
 from enemies import create_enemy
+from items import Item  # For inventory handling
 
 pygame.init()
 
@@ -46,31 +48,86 @@ player_name = player.name
 player_hp = player.stats["hp"]
 player_max_hp = player.stats["max_hp"]
 
+# Turn and state
+player_turn = True
 running = True
+message = ""  # For displaying actions/results
+
+font = pygame.font.SysFont("arial", 40)
+small_font = pygame.font.SysFont("arial", 30)
+
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN and player_turn:
-            if event.key == pygame.K_a:  # 'A' for Attack
-                damage = random.randint(5, 10)  # Example: 5-10 damage
-                goblin_hp -= damage
-                if goblin_hp < 0:
-                    goblin_hp = 0
-                player_turn = False  # Switch to enemy turn
-        # Enemy turn logic (simple AI)
-    if not player_turn and goblin_hp > 0:
-        damage = random.randint(3, 8)
-        hero_hp -= damage
-        if hero_hp < 0:
-            hero_hp = 0
-        player_turn = True  # Back to player
-        
+            if event.key == pygame.K_a:  # Attack
+                damage = random.randint(player.stats["strength"] - enemy.stats["defense"], player.stats["strength"])
+                if damage < 1: damage = 1
+                if enemy.defending:
+                    damage = max(1, damage // 2)
+                    enemy.defending = False
+                    message += " Enemy defended!"
+                enemy_hp -= damage
+                if enemy_hp < 0: enemy_hp = 0
+                message = f"You attack for {damage} damage!" + message
+                player_turn = False
+            elif event.key == pygame.K_d:  # Defend
+                player.defending = True
+                message = "You defend!"
+                player_turn = False
+            elif event.key == pygame.K_i:  # Inventory
+                if not player.inventory:
+                    message = "Inventory empty!"
+                else:
+                    # Simple text list for selection (use numbers 1-9 for items)
+                    inv_text = "Inventory: "
+                    for i, item in enumerate(player.inventory[:9]):  # Limit to 9 for keys
+                        inv_text += f"{i+1}: {item.name} "
+                    message = inv_text + "\nPress number to use."
+                    # Wait for number key
+                    selected = None
+                    while selected is None:
+                        for sub_event in pygame.event.get():
+                            if sub_event.type == pygame.KEYDOWN:
+                                if pygame.K_1 <= sub_event.key <= pygame.K_9:
+                                    idx = sub_event.key - pygame.K_1
+                                    if idx < len(player.inventory):
+                                        item = player.inventory[idx]
+                                        if item.use(player):  # If returns True, consume
+                                            player.inventory.pop(idx)
+                                        # Update HP/stats if changed
+                                        player_hp = player.stats["hp"]
+                                        message = f"Used {item.name}!"
+                                        selected = True
+                            elif sub_event.type == pygame.QUIT:
+                                running = False
+                                selected = True
+                        clock.tick(60)
+                    player_turn = False  # End turn after use
+
+    # Enemy turn
+    if not player_turn and enemy_hp > 0 and running:
+        # Simple AI: 70% attack, 30% defend
+        if random.random() < 0.7:
+            damage = random.randint(enemy.stats["strength"] - player.stats["defense"], enemy.stats["strength"])
+            if damage < 1: damage = 1
+            if player.defending:
+                damage = max(1, damage // 2)
+                player.defending = False
+                message += " You defended!"
+            player_hp -= damage
+            if player_hp < 0: player_hp = 0
+            message += f"\nEnemy attacks for {damage} damage!" + message
+        else:
+            enemy.defending = True
+            message += "\nEnemy defends!"
+        player_turn = True
+
+    # Draw
     screen.fill(BLACK)
     screen.blit(enemy_image, enemy_rect)
     screen.blit(player_image, player_rect)
-
-    font = pygame.font.SysFont("arial", 40)
 
     # Enemy name and HP
     name_text = font.render(enemy_name, True, WHITE)
@@ -92,14 +149,24 @@ while running:
     hp_text = font.render(f"HP: {player_hp}/{player_max_hp}", True, WHITE)
     screen.blit(hp_text, (SCREEN_WIDTH // 4 - hp_text.get_width() // 2, 530))
 
+    # Action message
+    msg_lines = message.split("\n")
+    for i, line in enumerate(msg_lines[-3:]):  # Last 3 lines
+        msg_text = small_font.render(line, True, WHITE)
+        screen.blit(msg_text, (20, SCREEN_HEIGHT - 100 - i * 30))
+
     # Check win/lose
-    if hero_hp <= 0:
-        lose_text = font.render("Game Over", True, (255, 0, 0))
-        screen.blit(lose_text, (screen_width // 2 - 100, screen_height // 2))
-        running = False  # Or handle restart
-    elif goblin_hp <= 0:
-        win_text = font.render("You Win!", True, (0, 255, 0))
-        screen.blit(win_text, (screen_width // 2 - 100, screen_height // 2))
+    if player_hp <= 0:
+        lose_text = font.render("Game Over", True, RED)
+        screen.blit(lose_text, (SCREEN_WIDTH // 2 - lose_text.get_width() // 2, SCREEN_HEIGHT // 2))
+        pygame.display.flip()
+        pygame.time.wait(2000)
+        running = False
+    elif enemy_hp <= 0:
+        win_text = font.render("You Win!", True, GREEN)
+        screen.blit(win_text, (SCREEN_WIDTH // 2 - win_text.get_width() // 2, SCREEN_HEIGHT // 2))
+        pygame.display.flip()
+        pygame.time.wait(2000)
         running = False
 
     pygame.display.flip()
