@@ -7,7 +7,7 @@ from items import healing_potion, iron_sword, leather_armor # Added import
 from player import Player
 from entity import CombatEntity 
 from combat import (
-    attack, apply_defend, apply_poison, apply_taunt,
+    attack, apply_defend, apply_poison, apply_enrage,
     process_effects, calculate_damage
 )
 
@@ -91,7 +91,7 @@ def render_screen(game, mode="explore"):
     if mode == "combat":
         print("Actions:".center(50))
         print("  1) Attack    2) Defend".center(50))
-        print("  3) Poison    4) Taunt".center(50))
+        print("  3) Poison    4) Enrage".center(50))
         print("-" * 50)
 
 
@@ -106,12 +106,11 @@ def player_turn(game):
             game["combat_log"].append("You brace for impact!")
             return
         elif choice == "3":
-            apply_poison(game["enemy"], dmg_per_turn=1, turns=3)
-            game["combat_log"].append("You poison the enemy!")
-            return
+            apply_poison(game, game["enemy"], dmg_per_turn=1, turns=3)
+            return  # Removed extra append; handled in function
         elif choice == "4":
-            apply_taunt(game["player"], dmg_reduction=-2, turns=1)  # taunt self? Wait — actually you want enemy to taunt player?
-            game["combat_log"].append("You taunt the enemy — it enrages and strikes harder? Wait, logic flip!")
+            apply_enrage(game, game["enemy"], dmg_bonus=3, turns=2)
+            game["combat_log"].append("You taunt the enemy—it enrages and strikes harder!")
             return
         else:
             print("Invalid choice. Enter 1, 2, 3, or 4.")
@@ -121,6 +120,10 @@ def enemy_turn(game):
     attack(game, "enemy", "player")
     game["combat_log"].append(f"{game['enemy'].name} attacks!")
 
+
+#def run_combat(game):
+    from battle import run_pygame_battle
+    run_pygame_battle(game)
 
 def run_combat(game):
     print("\n⚔ A Goblin ambushes you!")
