@@ -6,7 +6,7 @@ base_path = '/var/mnt/vms/cryptwalk_project/assets/ForestRanger/Forest_Ranger_1/
 # List available folders
 print("Available folders in PNG Sequences:", [d for d in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, d))])
 
-# Updated with all your folders (optional 'prefix' if file names differ from folder)
+# All available folders (optional 'prefix' if file names differ)
 animations = {
     'Dying': {},
     'Falling Down': {},
@@ -25,7 +25,6 @@ animations = {
     'Throwing': {},
     'Throwing in The Air': {},
     'Walking': {},
-    # Add more if new folders appear
 }
 
 for anim, info in animations.items():
