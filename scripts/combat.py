@@ -38,6 +38,7 @@ def attack(game, attacker_key, defender_key, bonus_damage=0):
     if attacker.weapon:
         bonus_damage = attacker.weapon.value
     dmg = base_dmg + bonus_damage
+    print(f"Debug: {attacker.name}  dmg = {dmg}, defender HP = {defender.stats['hp']}")  # Debug
 
 #Update attack() to handle "enrage":
 # Add after taunt check (around line ~35):

@@ -10,8 +10,9 @@ from combat import (
     attack, apply_defend, apply_poison, apply_enrage,
     process_effects, calculate_damage
 )
+from scripts.battle import run_pygame_battle
 
-
+run_pygame_battle(game)
 
 TEST_MODE = True
 
