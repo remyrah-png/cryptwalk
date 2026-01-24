@@ -4,9 +4,8 @@ print("Current dir:", os.getcwd())
 
 # Config: Adjust based on your sprites (from Walk.png: 6 frames, ~128x96 each? Measure one frame width/height)
 animations = {
-    'Attack_1': {'file': 'Attack_1.png', 'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
-    'Attack_2': {'file': 'Attack_2.png', 'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
-    'Attack_3': {'file': 'Attack_3.png', 'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
+    'Attack_1': {'file': '0_Forest_Ranger_Shooting_000.png', 'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
+    'Attack_2': {'file': '1_Forest_Ranger_Shooting_001.png', 'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
     'Dead': {'file': 'Dead.png', 'frame_count': 5, 'frame_width': 128, 'frame_height': 96},
     'Hurt': {'file': 'Hurt.png', 'frame_count': 2, 'frame_width': 128, 'frame_height': 96},
     'Idle': {'file': 'Idle.png', 'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
@@ -16,7 +15,7 @@ animations = {
     'Walk': {'file': 'Walk.png', 'frame_count': 6, 'frame_width': 128, 'frame_height': 96}
 }
 
-base_path = 'assets/Hero/PNG/PNG Sequence/'
+base_path = '/var/mnt/vms/cryptwalk_project/assets/ForestRanger/Forest_Ranger_1/PNG/PNG Sequences'
 
 for anim, info in animations.items():
     anim_path = os.path.join(base_path, anim)
