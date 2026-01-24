@@ -1,22 +1,30 @@
 import os
 from PIL import Image
 
-base_path = '/var/mnt/vms/cryptwalk_project/assets/ForestRanger/Forest_Ranger_1/PNG/PNG Sequences/'  # Fixed underscore
+base_path = '/var/mnt/vms/cryptwalk_project/assets/ForestRanger/Forest Ranger 1/PNG/PNG Sequences/'
 
 # List available folders
 print("Available folders in PNG Sequences:", [d for d in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, d))])
 
+# All your folders as keys (update if more/less; optional 'prefix' override if needed)
 animations = {
-    'Attack 1': {'prefix': 'Shooting', 'frame_count': 4, 'frame_width': 128, 'frame_height': 96},  # Based on your screenshot
-    'Dead': {'frame_count': 5, 'frame_width': 128, 'frame_height': 96},
-    'Hurt': {'frame_count': 2, 'frame_width': 128, 'frame_height': 96},
-    'Idle': {'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
-    'Jump': {'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
-    'Run': {'frame_count': 6, 'frame_width': 128, 'frame_height': 96},
-    'RunAttack': {'frame_count': 6, 'frame_width': 128, 'frame_height': 96},
-    'Walk': {'frame_count': 6, 'frame_width': 128, 'frame_height': 96},
-    'Throwing': {'frame_count': 12, 'frame_width': 128, 'frame_height': 96},
-    # Add more if needed, matching your folders
+    'Dying': {},
+    'Falling Down': {},
+    'Hurt': {},
+    'Idle': {},
+    'Jump Loop': {},
+    'Jump Start': {},
+    'Kicking': {},
+    'Run Shooting': {},
+    'Run Throwing': {},
+    'Running': {},
+    'Shooting': {'prefix': 'Shooting'},  # If needed; otherwise auto
+    'Shooting in The Air': {},
+    'Sliding': {},
+    'Throwing': {},
+    'Throwing in The Air': {},
+    'Walking': {},
+    # Add any others from the printed list
 }
 
 for anim, info in animations.items():
@@ -25,22 +33,35 @@ for anim, info in animations.items():
         print(f"Missing folder: {anim_path}")
         continue
     
-    prefix = info.get('prefix', anim)  # Use prefix if set, else anim
+    prefix = info.get('prefix', anim.replace(' ', '_'))
+    
+    # Get sorted frame files (exclude any existing combined PNG)
+    frame_files = sorted([f for f in os.listdir(anim_path) if f.endswith('.png') and f.startswith('0_Forest_Ranger_') and f != f'{prefix}.png'])
+    if not frame_files:
+        print(f"No frames found in: {anim_path}")
+        continue
+    
+    # Check if combined already exists
+    output_file = os.path.join(anim_path, f'{prefix}.png')
+    if os.path.exists(output_file):
+        print(f"Already combined: {output_file}")
+        continue
+    
+    # Auto-detect dimensions from first frame
+    first_frame_path = os.path.join(anim_path, frame_files[0])
+    with Image.open(first_frame_path) as first_frame:
+        frame_width, frame_height = first_frame.size
     
     # Create new blank sheet
-    sheet_width = info['frame_width'] * info['frame_count']
-    sheet = Image.new('RGBA', (sheet_width, info['frame_height']))
+    sheet_width = frame_width * len(frame_files)
+    sheet = Image.new('RGBA', (sheet_width, frame_height))
     
-    for i in range(info['frame_count']):
-        frame_file = os.path.join(anim_path, f'0_Forest_Ranger_{prefix}_{i:03d}.png')
-        if not os.path.exists(frame_file):
-            print(f"Missing frame: {frame_file}")
-            break
-        frame = Image.open(frame_file)
-        sheet.paste(frame, (i * info['frame_width'], 0))
+    for i, frame_file in enumerate(frame_files):
+        frame_path = os.path.join(anim_path, frame_file)
+        with Image.open(frame_path) as frame:
+            sheet.paste(frame, (i * frame_width, 0))
     
-    else:  # Only save if all frames found (no break)
-        sheet.save(os.path.join(anim_path, f'{prefix}.png'))
-        print(f"Combined {anim} into {prefix}.png")
+    sheet.save(output_file)
+    print(f"Combined {anim} into {output_file}")
 
 print("Combining complete!")
