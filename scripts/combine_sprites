@@ -1,0 +1,40 @@
+import os
+from PIL import Image
+
+base_path = '/var/mnt/vms/cryptwalk_project/assets/ForestRanger/Forest_Ranger_1/PNG/PNG Sequences/'  # Fixed underscore in folder name
+
+animations = {
+    'Shooting': {'frame_count': 4, 'frame_width': 128, 'frame_height': 96},  # Update keys/files as needed; no 'file' needed for input
+    'Dead': {'frame_count': 5, 'frame_width': 128, 'frame_height': 96},
+    'Hurt': {'frame_count': 2, 'frame_width': 128, 'frame_height': 96},
+    'Idle': {'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
+    'Jump': {'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
+    'Run': {'frame_count': 6, 'frame_width': 128, 'frame_height': 96},
+    'RunAttack': {'frame_count': 6, 'frame_width': 128, 'frame_height': 96},
+    'Walk': {'frame_count': 6, 'frame_width': 128, 'frame_height': 96},
+    'Throwing': {'frame_count': 12, 'frame_width': 128, 'frame_height': 96},
+}
+
+for anim, info in animations.items():
+    anim_path = os.path.join(base_path, anim)
+    if not os.path.exists(anim_path):
+        print(f"Missing folder: {anim_path}")
+        continue
+    
+    # Create a new blank sheet (horizontal strip)
+    sheet_width = info['frame_width'] * info['frame_count']
+    sheet = Image.new('RGBA', (sheet_width, info['frame_height']))
+    
+    for i in range(info['frame_count']):
+        frame_file = os.path.join(anim_path, f'0_Forest_Ranger_{anim}_{i:03d}.png')  # Matches your naming
+        if not os.path.exists(frame_file):
+            print(f"Missing frame: {frame_file}")
+            break
+        frame = Image.open(frame_file)
+        sheet.paste(frame, (i * info['frame_width'], 0))
+    
+    # Save the combined sheet in the anim folder
+    sheet.save(os.path.join(anim_path, f'{anim}.png'))
+    print(f"Combined {anim} into {anim}.png")
+
+print("Combining complete!")
