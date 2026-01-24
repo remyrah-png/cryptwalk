@@ -5,8 +5,8 @@ print("Current dir:", os.getcwd())
 
 # Config: Adjust based on your sprites
 animations = {
-    'Attack 1': {'file': '0 Forest Ranger Shooting 000.png', 'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
-    'Attack 2': {'file': '1 Forest Ranger Shooting 001.png', 'frame_count': 4, 'frame_width': 128, 'frame_height': 96},  # Assuming pattern; fix as needed
+    'Shooting': {'file': '0 Forest Ranger Shooting 000.png', 'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
+    # 'Shooting 1': {'file': '1 Forest Ranger Shooting 001.png', 'frame_count': 4, 'frame_width': 128, 'frame_height': 96},  # Assuming pattern; fix as needed
     'Dead': {'file': 'Dead.png', 'frame_count': 5, 'frame_width': 128, 'frame_height': 96},
     'Hurt': {'file': 'Hurt.png', 'frame_count': 2, 'frame_width': 128, 'frame_height': 96},
     'Idle': {'file': 'Idle.png', 'frame_count': 4, 'frame_width': 128, 'frame_height': 96},
