@@ -1,9 +1,7 @@
 import pygame
 import random
 import sys
-sys.path.append(".")  # For local imports
 
-from cryptwalk import game  # For fallback testing
 from combat import attack, apply_defend, apply_poison, apply_enrage, process_effects
 from enemies import create_enemy
 from entity import CombatEntity
@@ -167,6 +165,7 @@ def run_pygame_battle(game):
 
 # Standalone test
 if __name__ == "__main__":
+    from cryptwalk import game  # Moved import here to break cycle
     # Mock game for testing
     game["enemy"] = create_enemy("goblin")
     run_pygame_battle(game)

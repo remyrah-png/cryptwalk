@@ -1,6 +1,8 @@
 
 # cryptwalk.py - Main game file
 import os
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))  # Adds current dir to path
 import random
 from random import random, choice # Added import
 from items import healing_potion, iron_sword, leather_armor # Added import
@@ -10,9 +12,8 @@ from combat import (
     attack, apply_defend, apply_poison, apply_enrage,
     process_effects, calculate_damage
 )
-from scripts.battle import run_pygame_battle
-
-run_pygame_battle(game)
+  # Import the Pygame battle function
+from battle import run_pygame_battle
 
 TEST_MODE = True
 
@@ -34,7 +35,6 @@ game = {
 
     "enemy": None,
 }
-
 
 
 
