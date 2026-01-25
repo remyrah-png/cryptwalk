@@ -3,6 +3,23 @@
 from items import healing_potion, iron_sword, leather_armor
 from random import random, choice
 
+def attack(game, attacker_key, defender_key):
+    attacker = game[attacker_key]
+    defender = game[defender_key]
+
+    dmg = calculate_damage(attacker, defender)
+
+    # Critical hit check
+    if random() < attacker.stats.get("crit_chance", 0):
+        dmg *= 2
+        game["combat_log"].append(f"Critical hit by {attacker.name}!")
+
+    # Apply damage
+    defender.stats["hp"] = max(0, defender.stats["hp"] - dmg)
+    game["combat_log"].append(f"{attacker.name} attacks {defender.name} for {dmg} damage!")
+
+    return dmg
+
 def calculate_damage(attacker, defender):
     atk = attacker.stats["strength"]
     if attacker.weapon:
