@@ -6,7 +6,6 @@ import os  # For path debug
 from combat import attack, apply_defend, apply_poison, apply_enrage, process_effects
 from enemies import create_enemy
 from entity import CombatEntity
-from items import healing_potion
 
 def run_pygame_battle(game):
     pygame.init()
@@ -55,7 +54,7 @@ def run_pygame_battle(game):
     try:
         enemy_sheet = pygame.image.load(enemy_idle_path)
         print(f"Enemy sheet size: {enemy_sheet.get_size()}")  # Debug
-        enemy_frame_width = 96  # From screenshot
+        enemy_frame_width = 96  # From Goblin Idle screenshot
         enemy_frame_height = 96
         enemy_frame_count = enemy_sheet.get_width() // enemy_frame_width
         if enemy_frame_count == 0:
@@ -151,3 +150,31 @@ def run_pygame_battle(game):
         pygame.draw.rect(screen, GREEN, (enemy_rect.left, enemy_rect.bottom + 20, 250 * e_ratio, 30))
         hp_text = small_font.render(f"HP: {enemy.stats['hp']}/{enemy.stats['max_hp']}", True, WHITE)
         screen.blit(hp_text, (enemy_rect.centerx - hp_text.get_width() // 2, enemy_rect.bottom + 55))
+
+        # Controls
+        ctrl_text = small_font.render("A:Attack D:Defend P:Poison E:Enrage I:Item (Your turn!)" if player_turn else "--- Enemy Turn ---", True, WHITE)
+        screen.blit(ctrl_text, (SCREEN_WIDTH // 2 - ctrl_text.get_width() // 2, 20))
+
+        # Combat log (last 5 lines)
+        for i, log in enumerate(game["combat_log"][-5:]):
+            log_text = small_font.render(log, True, WHITE)
+            screen.blit(log_text, (20, SCREEN_HEIGHT - 150 + i * 25))
+
+        pygame.display.flip()
+        clock.tick(60)
+
+    # Post-battle
+    if game["player"].is_alive():
+        game["player"].gold += random.randint(8, 15) + game["world"]["depth"]
+        game["combat_log"].append("Victory! Gained gold.")
+    else:
+        game["combat_log"].append("Defeat!")
+    game["enemy"] = None
+    pygame.quit()
+
+# Standalone test
+if __name__ == "__main__":
+    from cryptwalk import game  # Moved import here to break cycle
+    # Mock game for testing
+    game["enemy"] = create_enemy("goblin")
+    run_pygame_battle(game)
