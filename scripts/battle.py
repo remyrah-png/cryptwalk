@@ -149,32 +149,4 @@ def run_pygame_battle(game):
         pygame.draw.rect(screen, RED, (enemy_rect.left, enemy_rect.bottom + 20, 250, 30))
         pygame.draw.rect(screen, GREEN, (enemy_rect.left, enemy_rect.bottom + 20, 250 * e_ratio, 30))
         hp_text = small_font.render(f"HP: {enemy.stats['hp']}/{enemy.stats['max_hp']}", True, WHITE)
-        screen.blit(hp_text, (enemy_rect.centerx - hp_text.get_width() // 2, enemy_rect.bottom + 55))
-
-        # Controls
-        ctrl_text = small_font.render("A:Attack D:Defend P:Poison E:Enrage I:Item (Your turn!)" if player_turn else "--- Enemy Turn ---", True, WHITE)
-        screen.blit(ctrl_text, (SCREEN_WIDTH // 2 - ctrl_text.get_width() // 2, 20))
-
-        # Combat log (last 5 lines)
-        for i, log in enumerate(game["combat_log"][-5:]):
-            log_text = small_font.render(log, True, WHITE)
-            screen.blit(log_text, (20, SCREEN_HEIGHT - 150 + i * 25))
-
-        pygame.display.flip()
-        clock.tick(60)
-
-    # Post-battle
-    if game["player"].is_alive():
-        game["player"].gold += random.randint(8, 15) + game["world"]["depth"]
-        game["combat_log"].append("Victory! Gained gold.")
-    else:
-        game["combat_log"].append("Defeat!")
-    game["enemy"] = None
-    pygame.quit()
-
-# Standalone test
-if __name__ == "__main__":
-    from cryptwalk import game  # Moved import here to break cycle
-    # Mock game for testing
-    game["enemy"] = create_enemy("goblin")
-    run_pygame_battle(game)
+        screen.blit(hp_text, (enemy_rect.centerx - hp_text.get_width() // 2, enemy_rect.bottom + 55
