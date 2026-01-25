@@ -6,6 +6,7 @@ import os  # For path debug
 from combat import attack, apply_defend, apply_poison, apply_enrage, process_effects
 from enemies import create_enemy
 from entity import CombatEntity
+from items import healing_potion
 
 def run_pygame_battle(game):
     pygame.init()
@@ -149,4 +150,4 @@ def run_pygame_battle(game):
         pygame.draw.rect(screen, RED, (enemy_rect.left, enemy_rect.bottom + 20, 250, 30))
         pygame.draw.rect(screen, GREEN, (enemy_rect.left, enemy_rect.bottom + 20, 250 * e_ratio, 30))
         hp_text = small_font.render(f"HP: {enemy.stats['hp']}/{enemy.stats['max_hp']}", True, WHITE)
-        screen.blit(hp_text, (enemy_rect.centerx - hp_text.get_width() // 2, enemy_rect.bottom + 55
+        screen.blit(hp_text, (enemy_rect.centerx - hp_text.get_width() // 2, enemy_rect.bottom + 55))
