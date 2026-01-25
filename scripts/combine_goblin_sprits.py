@@ -1,7 +1,7 @@
 import os
 from PIL import Image
 
-base_path = '/var/mnt/vms/cryptwalk_project/assets/Goblin/PNG/PNG Sequences/'  # From ls
+base_path = '/var/mnt/vms/cryptwalk_project/assets/Goblin/PNG/PNG Sequences/'
 
 # List available folders
 print("Available folders in PNG Sequences:", [d for d in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, d))])
@@ -11,7 +11,7 @@ animations = {
     'Dying': {'file_prefix': '0_Goblin_Dying_'},
     'Falling Down': {'file_prefix': '0_Goblin_Falling Down_'},
     'Hurt': {'file_prefix': '0_Goblin_Hurt_'},
-    'Idle': {'file_prefix': 'Idle_'},  # Updated for Idle naming
+    'Idle': {'file_prefix': 'Idle_'},  # Goblin Idle uses 'Idle_001.png'
     'Idle Blinking': {'file_prefix': '0_Goblin_Idle Blinking_'},
     'Jump Loop': {'file_prefix': '0_Goblin_Jump Loop_'},
     'Jump Start': {'file_prefix': '0_Goblin_Jump Start_'},
@@ -33,10 +33,10 @@ for anim, info in animations.items():
         print(f"Missing folder: {anim_path}")
         continue
     
-    file_prefix = info.get('file_prefix', '0_Goblin_')  # Default if not set
-    prefix = anim.replace(' ', '_')  # For output file name
+    file_prefix = info.get('file_prefix', '0_Goblin_')  # Default
+    prefix = anim.replace(' ', '_')  # For output
     
-    # Get sorted frame files (exclude any existing combined PNG)
+    # Get sorted frame files (exclude combined PNG; sort by name for correct order)
     frame_files = sorted([f for f in os.listdir(anim_path) if f.endswith('.png') and f.startswith(file_prefix) and f != f'{prefix}.png'])
     if not frame_files:
         print(f"No frames found in: {anim_path}")
@@ -65,5 +65,4 @@ for anim, info in animations.items():
     sheet.save(output_file)
     print(f"Combined {anim} into {output_file}")
 
-print("Combining complete!")
-print(f"Unknown item type: {item.type}")
+print("Combining completed.")

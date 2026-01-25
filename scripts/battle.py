@@ -1,6 +1,7 @@
 import pygame
 import random
 import sys
+import os  # For path debug
 
 from combat import attack, apply_defend, apply_poison, apply_enrage, process_effects
 from enemies import create_enemy
@@ -23,14 +24,17 @@ def run_pygame_battle(game):
     font = pygame.font.SysFont("arial", 40)
     small_font = pygame.font.SysFont("arial", 24)
 
-    # Player animation
+    # Player animation (Forest Ranger)
     player_idle_path = "assets/ForestRanger/Forest_Ranger_1/PNG/PNG Sequences/Idle/Idle.png"
+    print(f"Player path exists: {os.path.exists(player_idle_path)}")  # Debug
     try:
         player_sheet = pygame.image.load(player_idle_path)
         print(f"Player sheet size: {player_sheet.get_size()}")  # Debug
         player_frame_width = 128
         player_frame_height = 96
         player_frame_count = player_sheet.get_width() // player_frame_width
+        if player_frame_count == 0:
+            raise ValueError("No frames in player sheet")
         player_frames = [player_sheet.subsurface((i * player_frame_width, 0, player_frame_width, player_frame_height)) for i in range(player_frame_count)]
         player_frames = [pygame.transform.scale(frame, (250, 250)) for frame in player_frames]
     except Exception as e:
@@ -42,16 +46,19 @@ def run_pygame_battle(game):
     player_anim_timer = 0
     player_anim_speed = 100
 
-    # Enemy animation
+    # Enemy animation (Goblin)
     enemy = game["enemy"]
     enemy_type = enemy.name.lower()
     enemy_idle_path = f"assets/{enemy_type.capitalize()}/PNG/PNG Sequences/Idle/Idle.png"
+    print(f"Enemy path exists: {os.path.exists(enemy_idle_path)}")  # Debug
     try:
         enemy_sheet = pygame.image.load(enemy_idle_path)
         print(f"Enemy sheet size: {enemy_sheet.get_size()}")  # Debug
-        enemy_frame_width = 96  # Adjusted for Goblin (check your files; may be 96x96 or 128x96)
+        enemy_frame_width = 96  # From screenshot
         enemy_frame_height = 96
         enemy_frame_count = enemy_sheet.get_width() // enemy_frame_width
+        if enemy_frame_count == 0:
+            raise ValueError("No frames in enemy sheet")
         enemy_frames = [enemy_sheet.subsurface((i * enemy_frame_width, 0, enemy_frame_width, enemy_frame_height)) for i in range(enemy_frame_count)]
         enemy_frames = [pygame.transform.scale(frame, (250, 250)) for frame in enemy_frames]
         enemy_frames = [pygame.transform.flip(frame, True, False) for frame in enemy_frames]  # Face left
@@ -145,7 +152,7 @@ def run_pygame_battle(game):
         screen.blit(hp_text, (enemy_rect.centerx - hp_text.get_width() // 2, enemy_rect.bottom + 55))
 
         # Controls
-        ctrl_text = small_font.render("A:Attack D:Defend P:Poison E:Enrage I:Item  (Your turn!)" if player_turn else "--- Enemy Turn ---", True, WHITE)
+        ctrl_text = small_font.render("A:Attack D:Defend P:Poison E:Enrage I:Item (Your turn!)" if player_turn else "--- Enemy Turn ---", True, WHITE)
         screen.blit(ctrl_text, (SCREEN_WIDTH // 2 - ctrl_text.get_width() // 2, 20))
 
         # Combat log (last 5 lines)
