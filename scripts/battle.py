@@ -49,7 +49,7 @@ def run_pygame_battle(game):
     enemy_idle_path = f"assets/Goblin/PNG/PNG Sequences/Idle/Idle.png"  # Assume similar structure
     try:
         enemy_sheet = pygame.image.load(enemy_idle_path)
-        enemy_frame_width = 128  # Adjust if different
+        enemy_frame_width = 96  # Adjust if different
         enemy_frame_height = 96
         enemy_frame_count = enemy_sheet.get_width() // enemy_frame_width
         enemy_frames = [enemy_sheet.subsurface((i * enemy_frame_width, 0, enemy_frame_width, enemy_frame_height)) for i in range(enemy_frame_count)]
