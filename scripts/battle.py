@@ -1,16 +1,14 @@
 import pygame
 import random
 import sys
-import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))  # Adds current dir to path
-from items import healing_potion
+
 from combat import attack, apply_defend, apply_poison, apply_enrage, process_effects
 from enemies import create_enemy
 from entity import CombatEntity
 
 def run_pygame_battle(game):
     pygame.init()
-    SCREEN_WIDTH = 1200  # Increased for better layout
+    SCREEN_WIDTH = 1200
     SCREEN_HEIGHT = 800
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("Cryptwalk Battle")
@@ -20,20 +18,21 @@ def run_pygame_battle(game):
     WHITE = (255, 255, 255)
     RED = (255, 0, 0)
     GREEN = (0, 255, 0)
-    BG_COLOR = (20, 20, 20)  # Dark background
+    BG_COLOR = (20, 20, 20)
 
     font = pygame.font.SysFont("arial", 40)
     small_font = pygame.font.SysFont("arial", 24)
 
-    # Player animation (using combined sheet)
+    # Player animation
     player_idle_path = "assets/ForestRanger/Forest_Ranger_1/PNG/PNG Sequences/Idle/Idle.png"
     try:
         player_sheet = pygame.image.load(player_idle_path)
-        player_frame_width = 128  # From your assets
+        print(f"Player sheet size: {player_sheet.get_size()}")  # Debug
+        player_frame_width = 128
         player_frame_height = 96
-        player_frame_count = player_sheet.get_width() // player_frame_width  # Auto-detect
+        player_frame_count = player_sheet.get_width() // player_frame_width
         player_frames = [player_sheet.subsurface((i * player_frame_width, 0, player_frame_width, player_frame_height)) for i in range(player_frame_count)]
-        player_frames = [pygame.transform.scale(frame, (250, 250)) for frame in player_frames]  # Scale up
+        player_frames = [pygame.transform.scale(frame, (250, 250)) for frame in player_frames]
     except Exception as e:
         print(f"Player load error: {e}")
         player_frames = [pygame.Surface((250, 250)).convert()] * 4
@@ -41,15 +40,16 @@ def run_pygame_battle(game):
     player_rect = player_frames[0].get_rect(center=(SCREEN_WIDTH // 4, SCREEN_HEIGHT // 2 + 50))
     player_frame_index = 0
     player_anim_timer = 0
-    player_anim_speed = 100  # ms per frame
+    player_anim_speed = 100
 
     # Enemy animation
     enemy = game["enemy"]
     enemy_type = enemy.name.lower()
-    enemy_idle_path = f"assets/Goblin/PNG/PNG Sequences/Idle/Idle.png"  # Assume similar structure
+    enemy_idle_path = f"assets/{enemy_type.capitalize()}/PNG/PNG Sequences/Idle/Idle.png"
     try:
         enemy_sheet = pygame.image.load(enemy_idle_path)
-        enemy_frame_width = 96  # Adjust if different
+        print(f"Enemy sheet size: {enemy_sheet.get_size()}")  # Debug
+        enemy_frame_width = 96  # Adjusted for Goblin (check your files; may be 96x96 or 128x96)
         enemy_frame_height = 96
         enemy_frame_count = enemy_sheet.get_width() // enemy_frame_width
         enemy_frames = [enemy_sheet.subsurface((i * enemy_frame_width, 0, enemy_frame_width, enemy_frame_height)) for i in range(enemy_frame_count)]
