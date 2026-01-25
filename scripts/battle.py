@@ -1,7 +1,9 @@
 import pygame
 import random
 import sys
-
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))  # Adds current dir to path
+from items import healing_potion
 from combat import attack, apply_defend, apply_poison, apply_enrage, process_effects
 from enemies import create_enemy
 from entity import CombatEntity
@@ -44,7 +46,7 @@ def run_pygame_battle(game):
     # Enemy animation
     enemy = game["enemy"]
     enemy_type = enemy.name.lower()
-    enemy_idle_path = f"assets/{enemy_type.capitalize()}/PNG/PNG Sequences/Idle/Idle.png"  # Assume similar structure
+    enemy_idle_path = f"assets/Goblin/PNG/PNG Sequences/Idle/Idle.png"  # Assume similar structure
     try:
         enemy_sheet = pygame.image.load(enemy_idle_path)
         enemy_frame_width = 128  # Adjust if different

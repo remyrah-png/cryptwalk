@@ -1,17 +1,17 @@
 import os
 from PIL import Image
 
-base_path = '/var/mnt/vms/cryptwalk_project/assets/Goblin/PNG/PNG Sequences/'  # From your ls
+base_path = '/var/mnt/vms/cryptwalk_project/assets/Goblin/PNG/PNG Sequences/'  # From ls
 
 # List available folders
 print("Available folders in PNG Sequences:", [d for d in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, d))])
 
-# All available folders (with file_prefix based on your ls naming; adjust if needed)
+# All available folders (with file_prefix based on ls naming)
 animations = {
     'Dying': {'file_prefix': '0_Goblin_Dying_'},
     'Falling Down': {'file_prefix': '0_Goblin_Falling Down_'},
     'Hurt': {'file_prefix': '0_Goblin_Hurt_'},
-    'Idle': {'file_prefix': 'Idle_'},  # Different naming here
+    'Idle': {'file_prefix': 'Idle_'},  # Updated for Idle naming
     'Idle Blinking': {'file_prefix': '0_Goblin_Idle Blinking_'},
     'Jump Loop': {'file_prefix': '0_Goblin_Jump Loop_'},
     'Jump Start': {'file_prefix': '0_Goblin_Jump Start_'},
@@ -66,3 +66,4 @@ for anim, info in animations.items():
     print(f"Combined {anim} into {output_file}")
 
 print("Combining complete!")
+print(f"Unknown item type: {item.type}")
